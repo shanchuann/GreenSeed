@@ -1,0 +1,69 @@
+import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import axios from 'axios'
+
+export interface User {
+  id: string
+  email: string
+  name: string
+  role: 'seeker' | 'recruiter' | 'admin'
+  avatar_url?: string
+}
+
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref<User | null>(null)
+  const token = ref<string | null>(null)
+
+  const isLoggedIn = computed(() => !!token.value)
+  const isSeeker   = computed(() => user.value?.role === 'seeker')
+  const isRecruiter = computed(() => user.value?.role === 'recruiter')
+  const isAdmin    = computed(() => user.value?.role === 'admin')
+
+  function restore() {
+    const saved = localStorage.getItem('gs-token')
+    if (saved) {
+      token.value = saved
+      axios.defaults.headers.common['Authorization'] = `Bearer ${saved}`
+      fetchMe()
+    }
+  }
+
+  async function fetchMe() {
+    try {
+      const res = await axios.get('/api/auth/me')
+      user.value = res.data
+    } catch {
+      logout()
+    }
+  }
+
+  async function login(email: string, password: string) {
+    const res = await axios.post('/api/auth/login', { email, password })
+    token.value = res.data.access_token
+    user.value  = res.data.user
+    localStorage.setItem('gs-token', token.value!)
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+  }
+
+  async function register(payload: {
+    email: string
+    password: string
+    name: string
+    role: 'seeker' | 'recruiter'
+  }) {
+    const res = await axios.post('/api/auth/register', payload)
+    token.value = res.data.access_token
+    user.value  = res.data.user
+    localStorage.setItem('gs-token', token.value!)
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+  }
+
+  function logout() {
+    user.value  = null
+    token.value = null
+    localStorage.removeItem('gs-token')
+    delete axios.defaults.headers.common['Authorization']
+  }
+
+  return { user, token, isLoggedIn, isSeeker, isRecruiter, isAdmin, restore, login, register, logout }
+})
