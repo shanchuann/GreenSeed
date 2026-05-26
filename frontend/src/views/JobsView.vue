@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Sprout } from 'lucide-vue-next'
 import api from '@/api'
 import JobCard, { type Job } from '@/components/ui/JobCard.vue'
+import GsSelect, { type SelectOption } from '@/components/ui/GsSelect.vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -15,19 +16,22 @@ const sortBy   = ref((route.query.sort as string) ?? 'newest')
 const loading  = ref(false)
 const jobs     = ref<Job[]>([])
 
-const typeOptions = [
+const typeOptions: SelectOption[] = [
   { value: '',       label: '全部类型' },
   { value: 'full',   label: '全职' },
   { value: 'part',   label: '兼职' },
   { value: 'intern', label: '实习' },
 ]
 
-const sortOptions = [
+const sortOptions: SelectOption[] = [
   { value: 'newest', label: '最新发布' },
   { value: 'salary', label: '薪资最高' },
 ]
 
-const cities = ['全国', '北京', '上海', '杭州', '深圳', '广州', '成都', '武汉']
+const cityOptions: SelectOption[] = [
+  { value: '', label: '全国' },
+  ...['北京','上海','杭州','深圳','广州','成都','武汉'].map(c => ({ value: c, label: c })),
+]
 
 async function fetchJobs() {
   loading.value = true
@@ -88,13 +92,8 @@ onMounted(fetchJobs)
           />
         </div>
 
-        <select v-model="city"    class="filter-select" aria-label="城市">
-          <option v-for="c in cities" :key="c" :value="c === '全国' ? '' : c">{{ c }}</option>
-        </select>
-
-        <select v-model="jobType" class="filter-select" aria-label="职位类型">
-          <option v-for="t in typeOptions" :key="t.value" :value="t.value">{{ t.label }}</option>
-        </select>
+        <GsSelect v-model="city"    :options="cityOptions" aria-label="城市" />
+        <GsSelect v-model="jobType" :options="typeOptions" aria-label="职位类型" />
 
         <div class="sort-group">
           <span class="sort-group__label">排序</span>
@@ -189,19 +188,6 @@ onMounted(fetchJobs)
 }
 .search-bar__input::placeholder { color: var(--gs-text-3); }
 
-.filter-select {
-  height: 38px;
-  padding-inline: var(--space-3) var(--space-4);
-  background: var(--gs-surface);
-  border: 1.5px solid var(--gs-border);
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  color: var(--gs-text-2);
-  cursor: pointer;
-  outline: none;
-  transition: border-color var(--duration-fast);
-}
-.filter-select:focus { border-color: var(--gs-primary); }
 
 .sort-group {
   display: flex;

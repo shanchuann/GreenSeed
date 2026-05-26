@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api'
+import GsSelect, { type SelectOption } from '@/components/ui/GsSelect.vue'
 
 const router  = useRouter()
 const loading = ref(false)
@@ -52,6 +53,19 @@ async function submit() {
 }
 
 const categories = ['互联网·软件', '金融·投资', '设计·创意', '市场·运营', '教育·培训', '咨询·管理', '其他']
+
+const companyOptions = computed<SelectOption[]>(() =>
+  companies.value.map(c => ({ value: c.id, label: c.name }))
+)
+const jobTypeOptions: SelectOption[] = [
+  { value: 'full',   label: '全职' },
+  { value: 'part',   label: '兼职' },
+  { value: 'intern', label: '实习' },
+]
+const categoryOptions: SelectOption[] = [
+  { value: '', label: '请选择' },
+  ...categories.map(c => ({ value: c, label: c })),
+]
 </script>
 
 <template>
@@ -70,9 +84,7 @@ const categories = ['互联网·软件', '金融·投资', '设计·创意', '�
           <h2 class="form-section__title">基本信息</h2>
           <div class="field">
             <label class="field__label">所属公司</label>
-            <select v-model="form.company_id" class="input">
-              <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
-            </select>
+            <GsSelect v-model="form.company_id" :options="companyOptions" placeholder="选择公司" />
           </div>
           <div class="field">
             <label class="field__label">职位名称 <span class="required">*</span></label>
@@ -81,11 +93,7 @@ const categories = ['互联网·软件', '金融·投资', '设计·创意', '�
           <div class="field-row">
             <div class="field">
               <label class="field__label">工作类型</label>
-              <select v-model="form.job_type" class="input">
-                <option value="full">全职</option>
-                <option value="part">兼职</option>
-                <option value="intern">实习</option>
-              </select>
+              <GsSelect v-model="form.job_type" :options="jobTypeOptions" />
             </div>
             <div class="field">
               <label class="field__label">工作城市</label>
@@ -93,10 +101,7 @@ const categories = ['互联网·软件', '金融·投资', '设计·创意', '�
             </div>
             <div class="field">
               <label class="field__label">行业分类</label>
-              <select v-model="form.category" class="input">
-                <option value="">请选择</option>
-                <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-              </select>
+              <GsSelect v-model="form.category" :options="categoryOptions" />
             </div>
           </div>
         </div>

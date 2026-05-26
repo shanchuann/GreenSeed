@@ -8,6 +8,7 @@ import {
 } from 'chart.js'
 import { Pie, Line, Bar } from 'vue-chartjs'
 import api from '@/api'
+import GsSelect, { type SelectOption } from '@/components/ui/GsSelect.vue'
 
 ChartJS.register(
   ArcElement, CategoryScale, LinearScale,
@@ -111,6 +112,11 @@ const barOpts = {
 
 // ── User management ───────────────────────────────────────────────
 const roleLabel: Record<string, string> = { seeker: '求职者', recruiter: '招聘方', admin: '管理员' }
+const roleOptions: SelectOption[] = [
+  { value: 'seeker',    label: '求职者' },
+  { value: 'recruiter', label: '招聘方' },
+  { value: 'admin',     label: '管理员' },
+]
 
 async function changeRole(userId: string, newRole: string) {
   await api.patch(`/admin/users/${userId}/role`, null, { params: { role: newRole } })
@@ -194,15 +200,12 @@ async function deleteUser(userId: string) {
                 <td class="user-name">{{ u.name }}</td>
                 <td class="user-email">{{ u.email }}</td>
                 <td>
-                  <select
-                    :value="u.role"
-                    class="role-select"
-                    @change="changeRole(u.id, ($event.target as HTMLSelectElement).value)"
-                  >
-                    <option value="seeker">求职者</option>
-                    <option value="recruiter">招聘方</option>
-                    <option value="admin">管理员</option>
-                  </select>
+                  <GsSelect
+                    :model-value="u.role"
+                    :options="roleOptions"
+                    class="role-gs-select"
+                    @update:model-value="changeRole(u.id, $event)"
+                  />
                 </td>
                 <td class="user-date">{{ u.created_at?.slice(0, 10) }}</td>
                 <td>
@@ -249,7 +252,7 @@ async function deleteUser(userId: string) {
 .user-name { font-weight: 600; }
 .user-email { color: var(--gs-text-2); }
 .user-date  { color: var(--gs-text-3); }
-.role-select { background: var(--gs-bg); border: 1px solid var(--gs-border); border-radius: var(--radius-sm); padding: 2px 6px; font-size: var(--text-sm); color: var(--gs-text); cursor: pointer; }
+.role-gs-select { height: 32px !important; font-size: var(--text-xs) !important; }
 
 .skeleton-card { background: var(--gs-surface); border: 1px solid var(--gs-border); border-radius: var(--radius-lg); animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }

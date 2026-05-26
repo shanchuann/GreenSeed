@@ -6,6 +6,7 @@ import {
 } from 'lucide-vue-next'
 import api from '@/api'
 import JobCard, { type Job } from '@/components/ui/JobCard.vue'
+import GsSelect, { type SelectOption } from '@/components/ui/GsSelect.vue'
 
 const router  = useRouter()
 const keyword = ref('')
@@ -30,6 +31,11 @@ const stats = [
   { value: '—', unit: '家', label: '入驻企业' },
   { value: '—', unit: '个', label: '在招职位' },
   { value: '—', unit: '+', label: '注册求职者' },
+]
+
+const cityOptions: SelectOption[] = [
+  { value: '', label: '全国' },
+  ...['北京','上海','杭州','深圳','广州','成都','武汉'].map(c => ({ value: c, label: c })),
 ]
 
 const featuredJobs = ref<Job[]>([])
@@ -71,16 +77,12 @@ onMounted(async () => {
               aria-label="搜索关键词"
             />
           </div>
-          <select v-model="city" aria-label="选择城市" class="hero__city">
-            <option value="">全国</option>
-            <option>北京</option>
-            <option>上海</option>
-            <option>杭州</option>
-            <option>深圳</option>
-            <option>广州</option>
-            <option>成都</option>
-            <option>武汉</option>
-          </select>
+          <GsSelect
+            v-model="city"
+            :options="cityOptions"
+            aria-label="选择城市"
+            class="hero__city"
+          />
           <button type="submit" class="btn btn--primary btn--lg hero__search-btn">找工作</button>
         </form>
 
@@ -280,15 +282,17 @@ onMounted(async () => {
 .hero__search-field input::placeholder { color: var(--gs-text-3); }
 
 .hero__city {
-  height: 40px;
-  padding-inline: var(--space-3);
-  background: none;
-  border: none;
-  border-left: 1px solid var(--gs-border);
-  font-size: var(--text-sm);
-  color: var(--gs-text-2);
-  outline: none;
-  cursor: pointer;
+  border-radius: var(--radius-lg) !important;
+  border: none !important;
+  border-left: 1px solid var(--gs-border) !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  height: 44px !important;
+}
+.hero__city:focus,
+.hero__city.gs-select--open {
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .hero__search-btn {

@@ -2,6 +2,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api'
+import GsSelect, { type SelectOption } from '@/components/ui/GsSelect.vue'
 
 const router  = useRouter()
 const loading = ref(false)
@@ -16,6 +17,10 @@ const form = reactive({
 })
 
 const industries = ['互联网·软件', '金融·投资', '设计·创意', '市场·运营', '教育·培训', '咨询·管理', '制造·硬件', '医疗·健康', '其他']
+const industryOptions: SelectOption[] = [
+  { value: '', label: '请选择' },
+  ...industries.map(i => ({ value: i, label: i })),
+]
 
 async function submit() {
   if (!form.name.trim()) { error.value = '公司名称不能为空'; return }
@@ -48,10 +53,7 @@ async function submit() {
           <div class="field-row">
             <div class="field">
               <label class="field__label">行业</label>
-              <select v-model="form.industry" class="input">
-                <option value="">请选择</option>
-                <option v-for="ind in industries" :key="ind" :value="ind">{{ ind }}</option>
-              </select>
+              <GsSelect v-model="form.industry" :options="industryOptions" placeholder="请选择" />
             </div>
             <div class="field">
               <label class="field__label">所在城市</label>

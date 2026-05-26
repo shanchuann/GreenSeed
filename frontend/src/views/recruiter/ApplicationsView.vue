@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { MailOpen } from 'lucide-vue-next'
+import { MailOpen, ChevronDown } from 'lucide-vue-next'
 import api from '@/api'
 
 const route  = useRoute()
@@ -34,6 +34,12 @@ const statusLabel: Record<string, string> = {
 
 const statusOptions = ['pending', 'reviewing', 'accepted', 'rejected']
 
+const openMenuId = ref<string | null>(null)
+function toggleMenu(id: string) {
+  openMenuId.value = openMenuId.value === id ? null : id
+}
+function closeMenus() { openMenuId.value = null }
+
 const filtered = computed(() =>
   filter.value === 'all' ? apps.value : apps.value.filter(a => a.status === filter.value)
 )
@@ -42,6 +48,7 @@ async function updateStatus(appId: string, status: string) {
   await api.patch(`/applications/${appId}/status`, { status })
   const app = apps.value.find(a => a.id === appId)
   if (app) app.status = status
+  openMenuId.value = null
 }
 
 function relTime(iso: string) {
@@ -51,7 +58,7 @@ function relTime(iso: string) {
 </script>
 
 <template>
-  <div class="page-wrap">
+  <div class="page-wrap" @click="closeMenus">
     <div class="container">
       <div class="page-head fade-up">
         <div>
@@ -101,14 +108,20 @@ function relTime(iso: string) {
             <span class="app-card__time">投递于 {{ relTime(app.created_at) }}</span>
           </div>
           <div class="app-card__right">
-            <select
-              :value="app.status"
-              class="status-select"
-              :class="`status-select--${app.status}`"
-              @change="updateStatus(app.id, ($event.target as HTMLSelectElement).value)"
-            >
-              <option v-for="s in statusOptions" :key="s" :value="s">{{ statusLabel[s] }}</option>
-            </select>
+            <div class="status-picker" :class="`status-picker--${app.status}`" @click.stop="toggleMenu(app.id)">
+              <span class="status-picker__label">{{ statusLabel[app.status] }}</span>
+              <ChevronDown :size="12" :stroke-width="2.5" class="status-picker__chevron" :class="{ 'status-picker__chevron--open': openMenuId === app.id }" />
+              <Transition name="dropdown">
+                <ul v-if="openMenuId === app.id" class="status-picker__menu" @click.stop>
+                  <li
+                    v-for="s in statusOptions" :key="s"
+                    class="status-picker__option"
+                    :class="[`status-option--${s}`, { 'status-picker__option--active': s === app.status }]"
+                    @click="updateStatus(app.id, s)"
+                  >{{ statusLabel[s] }}</li>
+                </ul>
+              </Transition>
+            </div>
           </div>
         </li>
       </ul>
@@ -140,11 +153,61 @@ function relTime(iso: string) {
 .app-card__time { font-size: var(--text-xs); color: var(--gs-text-3); }
 .app-card__right { flex-shrink: 0; }
 
-.status-select { appearance: none; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; cursor: pointer; border: 1px solid; }
-.status-select--pending   { background: oklch(95% 0.01 100); color: var(--gs-text-2); border-color: var(--gs-border); }
-.status-select--reviewing { background: oklch(93% 0.05 220); color: oklch(40% 0.12 230); border-color: oklch(80% 0.07 220); }
-.status-select--accepted  { background: var(--gs-primary-tint); color: var(--gs-primary); border-color: oklch(80% 0.08 144); }
-.status-select--rejected  { background: oklch(96% 0.03 25); color: var(--gs-error); border-color: oklch(85% 0.06 25); }
+.status-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.status-picker--pending   { background: oklch(95% 0.01 100); color: var(--gs-text-2); border-color: var(--gs-border); }
+.status-picker--reviewing { background: oklch(93% 0.05 220); color: oklch(40% 0.12 230); border-color: oklch(80% 0.07 220); }
+.status-picker--accepted  { background: var(--gs-primary-tint); color: var(--gs-primary); border-color: oklch(80% 0.08 144); }
+.status-picker--rejected  { background: oklch(96% 0.03 25); color: var(--gs-error); border-color: oklch(85% 0.06 25); }
+
+.status-picker__chevron { flex-shrink: 0; transition: transform var(--duration-fast) var(--ease-out); }
+.status-picker__chevron--open { transform: rotate(180deg); }
+
+.status-picker__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--gs-surface);
+  border: 1px solid var(--gs-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  list-style: none;
+  z-index: 200;
+  padding: var(--space-1);
+  min-width: 110px;
+  overflow: hidden;
+}
+.status-picker__option {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--gs-text-2);
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+.status-picker__option:hover { background: var(--gs-surface-2); color: var(--gs-text); }
+.status-picker__option--active { font-weight: 700; }
+.status-option--pending.status-picker__option--active   { color: var(--gs-text-2); }
+.status-option--reviewing.status-picker__option--active { color: oklch(40% 0.12 230); }
+.status-option--accepted.status-picker__option--active  { color: var(--gs-primary); }
+.status-option--rejected.status-picker__option--active  { color: var(--gs-error); }
+
+.dropdown-enter-active { transition: opacity var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out); }
+.dropdown-leave-active { transition: opacity 80ms ease-in, transform 80ms ease-in; }
+.dropdown-enter-from, .dropdown-leave-to { opacity: 0; transform: translateY(-6px); }
 
 .empty-state { text-align: center; padding-block: var(--space-20); }
 .empty-state__icon { color: var(--gs-text-3); margin-bottom: var(--space-4); display: flex; justify-content: center; }
