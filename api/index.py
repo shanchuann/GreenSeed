@@ -5,7 +5,7 @@ import os
 
 load_dotenv()
 
-from api.routers import auth, jobs, applications, companies, admin
+from api.routers import auth, jobs, applications, companies, admin, seed
 
 app = FastAPI(
     title="GreenSeed API",
@@ -31,6 +31,7 @@ app.include_router(jobs.router,         prefix="/api/jobs",         tags=["jobs"
 app.include_router(applications.router, prefix="/api/applications", tags=["applications"])
 app.include_router(companies.router,    prefix="/api/companies",    tags=["companies"])
 app.include_router(admin.router,        prefix="/api/admin",        tags=["admin"])
+app.include_router(seed.router,         prefix="/api/seed",         tags=["seed"])
 
 
 @app.get("/api/health")
