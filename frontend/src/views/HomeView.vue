@@ -66,6 +66,7 @@ onMounted(async () => {
 </script>
 
 <template>
+  <div class="home-page">
   <!-- ── Hero ─────────────────────────────────────────────── -->
   <section class="hero">
     <div class="container hero__inner">
@@ -187,9 +188,12 @@ onMounted(async () => {
       </div>
     </div>
   </section>
+  </div>
 </template>
 
 <style scoped>
+.home-page { display: contents; }
+
 /* ── Hero ── */
 .hero {
   position: relative;
