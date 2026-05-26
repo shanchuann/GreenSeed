@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Monitor, TrendingUp, Palette, Megaphone, BookOpen, Briefcase,
 } from 'lucide-vue-next'
+import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import api from '@/api'
 import JobCard, { type Job } from '@/components/ui/JobCard.vue'
 import GsSelect from '@/components/ui/GsSelect.vue'
 import { cityOptions } from '@/constants/cities'
+
+gsap.registerPlugin(ScrollTrigger)
 
 const router  = useRouter()
 const keyword = ref('')
@@ -36,9 +40,10 @@ const stats = ref([
   { value: '—', unit: '+', label: '注册求职者' },
 ])
 
-
-const featuredJobs = ref<Job[]>([])
+const featuredJobs    = ref<Job[]>([])
 const featuredLoading = ref(true)
+
+let gsapCtx: gsap.Context | undefined
 
 onMounted(async () => {
   const [jobsRes, statsRes] = await Promise.allSettled([
@@ -62,6 +67,57 @@ onMounted(async () => {
       count: catMap[c.label] ?? 0,
     }))
   }
+
+  await nextTick()
+
+  gsapCtx = gsap.context(() => {
+    // ── Hero 入场 ──────────────────────────────────────────
+    gsap.timeline({ defaults: { ease: 'power3.out' } })
+      .from('.hero__brand-text', { y: 50, opacity: 0, duration: 0.85 })
+      .from('.hero__tagline',    { y: 28, opacity: 0, duration: 0.65 }, '-=0.55')
+      .from('.hero__desc',       { y: 24, opacity: 0, duration: 0.6  }, '-=0.45')
+      .from('.hero__search',     { y: 24, opacity: 0, duration: 0.55 }, '-=0.4')
+      .from('.hero__hot-tag',    { y: 14, opacity: 0, duration: 0.35, stagger: 0.07 }, '-=0.3')
+      .from('.hero__stats',      { x: 50, opacity: 0, duration: 0.75 }, '-=0.7')
+
+    // ── 分类卡片滚动入场 ───────────────────────────────────
+    gsap.from('.category-card', {
+      scrollTrigger: { trigger: '.categories', start: 'top 82%' },
+      y: 36, opacity: 0, duration: 0.55, stagger: 0.08, ease: 'power2.out',
+    })
+
+    // ── 最新职位 section 标题 ──────────────────────────────
+    gsap.from('.section--jobs .section__head', {
+      scrollTrigger: { trigger: '.section--jobs', start: 'top 85%' },
+      y: 20, opacity: 0, duration: 0.5, ease: 'power2.out',
+    })
+
+    // ── CTA 滚动入场 ───────────────────────────────────────
+    gsap.from(['.cta-section__title', '.cta-section__desc'], {
+      scrollTrigger: { trigger: '.cta-section', start: 'top 82%' },
+      y: 30, opacity: 0, duration: 0.6, stagger: 0.13, ease: 'power2.out',
+    })
+    gsap.from('.cta-section__actions', {
+      scrollTrigger: { trigger: '.cta-section', start: 'top 82%' },
+      y: 20, opacity: 0, duration: 0.55, delay: 0.28, ease: 'power2.out',
+    })
+  })
+})
+
+// 职位卡片在数据加载完后滚动入场
+watch(featuredLoading, async (loading) => {
+  if (!loading) {
+    await nextTick()
+    gsap.from('.jobs-grid .job-card', {
+      scrollTrigger: { trigger: '.jobs-grid', start: 'top 88%' },
+      y: 32, opacity: 0, duration: 0.5, stagger: 0.07, ease: 'power2.out',
+    })
+  }
+})
+
+onUnmounted(() => {
+  gsapCtx?.revert()
+  ScrollTrigger.getAll().forEach(t => t.kill())
 })
 </script>
 
@@ -70,7 +126,7 @@ onMounted(async () => {
   <!-- ── Hero ─────────────────────────────────────────────── -->
   <section class="hero">
     <div class="container hero__inner">
-      <div class="hero__copy fade-up">
+      <div class="hero__copy">
         <h1 class="hero__brand">
           <span class="hero__brand-text">青禾<em class="hero__brand-accent">招聘</em></span>
         </h1>
@@ -112,7 +168,7 @@ onMounted(async () => {
       </div>
 
       <!-- Stats panel -->
-      <div class="hero__stats fade-up" style="--delay: 100ms">
+      <div class="hero__stats">
         <div v-for="s in stats" :key="s.label" class="hero__stat">
           <div class="hero__stat-value">
             {{ s.value }}<span class="hero__stat-unit">{{ s.unit }}</span>
@@ -154,7 +210,7 @@ onMounted(async () => {
   </section>
 
   <!-- ── Featured Jobs ──────────────────────────────────── -->
-  <section class="section">
+  <section class="section section--jobs">
     <div class="container">
       <header class="section__head">
         <h2 class="section__title">最新发布</h2>
