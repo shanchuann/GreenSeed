@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
-const restored = ref(false)
 
-onMounted(async () => {
+onMounted(() => {
   const saved = localStorage.getItem('gs-theme')
   if (saved) document.documentElement.setAttribute('data-theme', saved)
-  await auth.restore()
-  restored.value = true
+  auth.restore()
 })
 </script>
 
@@ -19,7 +17,7 @@ onMounted(async () => {
   <div class="app-shell">
     <AppHeader />
     <main class="app-main">
-      <RouterView v-if="restored" v-slot="{ Component }">
+      <RouterView v-if="auth.isRestored" v-slot="{ Component }">
         <Transition name="page" mode="out-in">
           <component :is="Component" />
         </Transition>

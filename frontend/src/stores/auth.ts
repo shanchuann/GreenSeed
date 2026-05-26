@@ -18,6 +18,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isSeeker    = computed(() => user.value?.role === 'seeker')
   const isRecruiter = computed(() => user.value?.role === 'recruiter')
   const isAdmin     = computed(() => user.value?.role === 'admin')
+  const isRestored  = ref(false)
 
   // 幂等：多次调用共享同一个 Promise，避免重复请求
   let _restorePromise: Promise<void> | null = null
@@ -25,10 +26,14 @@ export const useAuthStore = defineStore('auth', () => {
   function restore(): Promise<void> {
     if (_restorePromise) return _restorePromise
     const saved = localStorage.getItem('gs-token')
-    if (!saved) return (_restorePromise = Promise.resolve())
+    if (!saved) {
+      isRestored.value = true
+      return (_restorePromise = Promise.resolve())
+    }
     token.value = saved
     axios.defaults.headers.common['Authorization'] = `Bearer ${saved}`
-    return (_restorePromise = fetchMe())
+    // .finally 在 Promise resolve 前运行，保证 isRestored 先于 await 返回处被设置
+    return (_restorePromise = fetchMe().finally(() => { isRestored.value = true }))
   }
 
   async function fetchMe() {
@@ -65,12 +70,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
-    user.value  = null
-    token.value = null
-    _restorePromise = null
+    user.value       = null
+    token.value      = null
+    isRestored.value = false
+    _restorePromise  = null
     localStorage.removeItem('gs-token')
     delete axios.defaults.headers.common['Authorization']
   }
 
-  return { user, token, isLoggedIn, isSeeker, isRecruiter, isAdmin, restore, login, register, logout, fetchMe }
+  return { user, token, isLoggedIn, isSeeker, isRecruiter, isAdmin, isRestored, restore, login, register, logout, fetchMe }
 })

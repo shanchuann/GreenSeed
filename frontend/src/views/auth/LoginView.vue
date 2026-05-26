@@ -2,6 +2,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { parseApiError } from '@/utils/error'
 
 const router = useRouter()
 const route  = useRoute()
@@ -19,7 +20,7 @@ async function submit() {
     const redirect = (route.query.redirect as string) || '/'
     router.push(redirect)
   } catch (e: any) {
-    error.value = e?.response?.data?.detail ?? '邮箱或密码错误，请重试'
+    error.value = parseApiError(e, '邮箱或密码错误，请重试')
   } finally {
     loading.value = false
   }

@@ -3,6 +3,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { GraduationCap, Building2 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
+import { parseApiError } from '@/utils/error'
 
 const router = useRouter()
 const auth   = useAuthStore()
@@ -35,7 +36,7 @@ async function submit() {
       needEmail.value = true
     }
   } catch (e: any) {
-    error.value = e?.response?.data?.detail ?? '注册失败，请检查信息后重试'
+    error.value = parseApiError(e, '注册失败，请检查信息后重试')
   } finally {
     loading.value = false
   }
