@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { MailOpen } from 'lucide-vue-next'
 import api from '@/api'
 
 const route  = useRoute()
@@ -84,7 +85,7 @@ function relTime(iso: string) {
 
       <!-- Empty -->
       <div v-else-if="filtered.length === 0" class="empty-state">
-        <div class="empty-state__icon">📭</div>
+        <div class="empty-state__icon"><MailOpen :size="48" :stroke-width="1.2" /></div>
         <h3>{{ filter === 'all' ? '暂无申请记录' : `没有「${statusLabel[filter]}」的申请` }}</h3>
       </div>
 
@@ -146,7 +147,7 @@ function relTime(iso: string) {
 .status-select--rejected  { background: oklch(96% 0.03 25); color: var(--gs-error); border-color: oklch(85% 0.06 25); }
 
 .empty-state { text-align: center; padding-block: var(--space-20); }
-.empty-state__icon { font-size: 3rem; margin-bottom: var(--space-4); }
+.empty-state__icon { color: var(--gs-text-3); margin-bottom: var(--space-4); display: flex; justify-content: center; }
 .empty-state h3 { font-size: var(--text-xl); color: var(--gs-text-2); }
 
 .skeleton-card { background: var(--gs-surface); border: 1px solid var(--gs-border); border-radius: var(--radius-lg); animation: pulse 1.4s ease-in-out infinite; }

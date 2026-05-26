@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import {
+  Monitor, TrendingUp, Palette, Megaphone, BookOpen, Briefcase,
+} from 'lucide-vue-next'
 import JobCard, { type Job } from '@/components/ui/JobCard.vue'
 
 const router  = useRouter()
@@ -14,12 +17,12 @@ function search() {
 const hotKeywords = ['产品经理', '前端开发', 'UI 设计', '数据分析', '运营']
 
 const categories = [
-  { label: '互联网·软件', icon: '💻', count: 482 },
-  { label: '金融·投资',   icon: '📈', count: 136 },
-  { label: '设计·创意',   icon: '🎨', count: 94  },
-  { label: '市场·运营',   icon: '📣', count: 217 },
-  { label: '教育·培训',   icon: '📚', count: 68  },
-  { label: '咨询·管理',   icon: '🤝', count: 55  },
+  { label: '互联网·软件', icon: Monitor,    count: 482 },
+  { label: '金融·投资',   icon: TrendingUp, count: 136 },
+  { label: '设计·创意',   icon: Palette,    count: 94  },
+  { label: '市场·运营',   icon: Megaphone,  count: 217 },
+  { label: '教育·培训',   icon: BookOpen,   count: 68  },
+  { label: '咨询·管理',   icon: Briefcase,  count: 55  },
 ]
 
 const stats = [
@@ -104,8 +107,7 @@ const featuredJobs: Job[] = [
     <div class="container hero__inner">
       <div class="hero__copy fade-up">
         <h1 class="hero__brand">
-          <em class="hero__brand-main">青禾</em>
-          <span class="hero__brand-suffix">招聘</span>
+          <span class="hero__brand-text">青禾<em class="hero__brand-accent">招聘</em></span>
         </h1>
         <p class="hero__tagline">以青春为籽，启职场新章</p>
         <p class="hero__desc">专为本科生打造的求职平台，连接优质企业与充满活力的应届人才</p>
@@ -182,7 +184,7 @@ const featuredJobs: Job[] = [
           :to="`/jobs?category=${encodeURIComponent(cat.label)}`"
           class="category-card"
         >
-          <span class="category-card__icon" aria-hidden="true">{{ cat.icon }}</span>
+          <span class="category-card__icon" aria-hidden="true"><component :is="cat.icon" :size="22" :stroke-width="1.5" /></span>
           <span class="category-card__label">{{ cat.label }}</span>
           <span class="category-card__count">{{ cat.count }} 个职位</span>
         </RouterLink>
@@ -245,10 +247,23 @@ const featuredJobs: Job[] = [
 .hero__brand {
   display: flex;
   align-items: baseline;
-  gap: var(--space-2);
   margin-bottom: var(--space-4);
   font-family: var(--font-display);
   line-height: 0.9;
+}
+
+.hero__brand-text {
+  font-size: var(--text-hero);
+  font-weight: 800;
+  font-style: normal;
+  color: var(--gs-ink);
+  letter-spacing: -0.04em;
+}
+
+.hero__brand-accent {
+  color: var(--gs-primary);
+  font-style: normal;
+  font-weight: 800;
 }
 
 .hero__brand-main {
@@ -260,10 +275,10 @@ const featuredJobs: Job[] = [
 }
 
 .hero__brand-suffix {
-  font-size: clamp(1.5rem, 4vw, 3.5rem);
-  font-weight: 300;
+  font-size: var(--text-hero);
+  font-weight: 800;
   color: var(--gs-primary);
-  letter-spacing: 0.06em;
+  letter-spacing: -0.04em;
 }
 
 .hero__tagline {
@@ -474,7 +489,11 @@ const featuredJobs: Job[] = [
   transform: translateY(-2px);
 }
 
-.category-card__icon { font-size: 1.5rem; line-height: 1; }
+.category-card__icon {
+  display: flex;
+  align-items: center;
+  color: var(--gs-primary);
+}
 .category-card__label {
   font-size: var(--text-sm);
   font-weight: 600;

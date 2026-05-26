@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive } from 'vue'
+import { Check } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api'
 
@@ -105,7 +106,8 @@ async function save() {
 
           <div class="form-actions">
             <button type="submit" class="btn btn--primary" :disabled="saving">
-              {{ saving ? '保存中…' : saved ? '已保存 ✓' : '保存修改' }}
+              <Check v-if="saved" :size="16" style="margin-right:4px" />
+              {{ saving ? '保存中…' : saved ? '已保存' : '保存修改' }}
             </button>
           </div>
         </form>

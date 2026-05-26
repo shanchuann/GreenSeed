@@ -31,8 +31,7 @@ const userInitial = computed(() =>
     <div class="container header__inner">
       <!-- Logo -->
       <RouterLink to="/" class="logo" aria-label="青禾招聘 首页">
-        <span class="logo__main">青禾</span>
-        <span class="logo__sub">招聘</span>
+        <span class="logo__text">青禾<span class="logo__accent">招聘</span></span>
       </RouterLink>
 
       <!-- Desktop nav -->
@@ -112,27 +111,25 @@ const userInitial = computed(() =>
 /* Logo */
 .logo {
   display: flex;
-  align-items: baseline;
-  gap: var(--space-1);
+  align-items: center;
   font-family: var(--font-display);
   text-decoration: none;
   flex-shrink: 0;
 }
-.logo__main {
-  font-size: 1.5rem;
+.logo__text {
+  font-size: 1.25rem;
   font-weight: 800;
   color: var(--gs-ink);
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
   line-height: 1;
   transition: color var(--duration-fast);
 }
-.logo__sub {
-  font-size: 0.875rem;
-  font-weight: 400;
+.logo__accent {
   color: var(--gs-primary);
-  letter-spacing: 0.08em;
+  font-weight: 800;
 }
-.logo:hover .logo__main { color: var(--gs-primary); }
+.logo:hover .logo__text { color: var(--gs-primary); }
+.logo:hover .logo__accent { color: var(--gs-primary); }
 
 /* Nav */
 .nav {
