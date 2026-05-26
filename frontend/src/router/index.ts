@@ -57,6 +57,18 @@ const router = createRouter({
       meta: { requiresAuth: true, role: 'recruiter' },
     },
     {
+      path: '/recruiter/applications/:id',
+      name: 'recruiter-applications',
+      component: () => import('@/views/recruiter/ApplicationsView.vue'),
+      meta: { requiresAuth: true, role: 'recruiter' },
+    },
+    {
+      path: '/recruiter/company/create',
+      name: 'company-create',
+      component: () => import('@/views/recruiter/CompanyCreateView.vue'),
+      meta: { requiresAuth: true, role: 'recruiter' },
+    },
+    {
       path: '/admin',
       name: 'admin',
       component: () => import('@/views/admin/DashboardView.vue'),
