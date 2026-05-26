@@ -52,10 +52,13 @@ export const useAuthStore = defineStore('auth', () => {
     role: 'seeker' | 'recruiter'
   }) {
     const res = await axios.post('/api/auth/register', payload)
-    token.value = res.data.access_token
-    user.value  = res.data.user
-    localStorage.setItem('gs-token', token.value!)
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+    user.value = res.data.user
+    if (res.data.access_token) {
+      token.value = res.data.access_token
+      localStorage.setItem('gs-token', token.value!)
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+    }
+    // empty token means email confirmation is required — caller should handle redirect
   }
 
   function logout() {

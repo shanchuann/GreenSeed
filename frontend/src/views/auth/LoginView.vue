@@ -31,8 +31,7 @@ async function submit() {
     <div class="auth-card fade-up">
       <div class="auth-card__header">
         <RouterLink to="/" class="auth-logo">
-          <span class="auth-logo__main">青禾</span>
-          <span class="auth-logo__sub">招聘</span>
+          <span class="auth-logo__text">青禾<em class="auth-logo__accent">招聘</em></span>
         </RouterLink>
         <h1 class="auth-card__title">欢迎回来</h1>
         <p class="auth-card__subtitle">登录你的账号，继续探索职位</p>
@@ -113,23 +112,20 @@ async function submit() {
 .auth-logo {
   display: inline-flex;
   align-items: baseline;
-  gap: 3px;
   text-decoration: none;
   margin-bottom: var(--space-5);
 }
-.auth-logo__main {
+.auth-logo__text {
   font-family: var(--font-display);
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--gs-ink);
   letter-spacing: -0.04em;
+  font-style: normal;
 }
-.auth-logo__sub {
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  font-weight: 400;
+.auth-logo__accent {
   color: var(--gs-primary);
-  letter-spacing: 0.06em;
+  font-style: normal;
 }
 
 .auth-card__title {

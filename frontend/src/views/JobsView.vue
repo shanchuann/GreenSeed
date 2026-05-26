@@ -1,28 +1,19 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Sprout } from 'lucide-vue-next'
+import api from '@/api'
 import JobCard, { type Job } from '@/components/ui/JobCard.vue'
 
 const route  = useRoute()
 const router = useRouter()
 
-const keyword  = ref((route.query.q  as string) ?? '')
+const keyword  = ref((route.query.q    as string) ?? '')
 const city     = ref((route.query.city as string) ?? '')
 const jobType  = ref((route.query.type as string) ?? '')
 const sortBy   = ref((route.query.sort as string) ?? 'newest')
 const loading  = ref(false)
-
-const jobs = ref<Job[]>([
-  { id: '1', title: '产品经理（实习）',       company_name: '字节跳动', location: '北京',  job_type: 'intern', salary_min: 4000,  salary_max: 6000,  tags: ['产品规划', 'B端'],         created_at: new Date(Date.now() - 1*86400000).toISOString() },
-  { id: '2', title: '前端开发工程师',         company_name: '美团',     location: '上海',  job_type: 'full',   salary_min: 15000, salary_max: 25000, tags: ['Vue3', 'TypeScript'],       created_at: new Date(Date.now() - 2*86400000).toISOString() },
-  { id: '3', title: 'UI/UX 设计师',           company_name: '网易',     location: '杭州',  job_type: 'full',   salary_min: 12000, salary_max: 18000, tags: ['Figma', '用户研究'],        created_at: new Date(Date.now() - 3*86400000).toISOString() },
-  { id: '4', title: '数据分析师（校招）',     company_name: '阿里巴巴', location: '杭州',  job_type: 'full',   salary_min: 13000, salary_max: 20000, tags: ['Python', 'SQL'],            created_at: new Date(Date.now() - 4*86400000).toISOString() },
-  { id: '5', title: '运营专员',               company_name: '小红书',   location: '上海',  job_type: 'part',   salary_min: 6000,  salary_max: 9000,  tags: ['内容运营', '社区'],         created_at: new Date(Date.now() - 5*86400000).toISOString() },
-  { id: '6', title: 'Java 后端开发（实习）',  company_name: '腾讯',     location: '深圳',  job_type: 'intern', salary_min: 5000,  salary_max: 8000,  tags: ['Java', 'Spring Boot'],     created_at: new Date(Date.now() - 6*86400000).toISOString() },
-  { id: '7', title: '市场营销专员',           company_name: '华为',     location: '深圳',  job_type: 'full',   salary_min: 8000,  salary_max: 12000, tags: ['市场分析', '品牌推广'],     created_at: new Date(Date.now() - 7*86400000).toISOString() },
-  { id: '8', title: 'Python 开发工程师',      company_name: '百度',     location: '北京',  job_type: 'full',   salary_min: 18000, salary_max: 30000, tags: ['Python', 'FastAPI'],       created_at: new Date(Date.now() - 8*86400000).toISOString() },
-  { id: '9', title: '品牌设计实习生',         company_name: '喜茶',     location: '广州',  job_type: 'intern', salary_min: 3000,  salary_max: 5000,  tags: ['Illustrator', '品牌设计'], created_at: new Date(Date.now() - 9*86400000).toISOString() },
-])
+const jobs     = ref<Job[]>([])
 
 const typeOptions = [
   { value: '',       label: '全部类型' },
@@ -38,22 +29,33 @@ const sortOptions = [
 
 const cities = ['全国', '北京', '上海', '杭州', '深圳', '广州', '成都', '武汉']
 
-const filtered = computed(() => {
-  let list = [...jobs.value]
-  if (keyword.value)
-    list = list.filter(j =>
-      j.title.includes(keyword.value) ||
-      j.company_name.includes(keyword.value) ||
-      j.tags?.some(t => t.includes(keyword.value))
-    )
-  if (city.value) list = list.filter(j => j.location === city.value)
-  if (jobType.value) list = list.filter(j => j.job_type === jobType.value)
-  if (sortBy.value === 'salary')
-    list.sort((a, b) => (b.salary_max ?? 0) - (a.salary_max ?? 0))
-  return list
-})
+async function fetchJobs() {
+  loading.value = true
+  try {
+    const res = await api.get('/jobs', {
+      params: {
+        q:        keyword.value  || undefined,
+        city:     city.value     || undefined,
+        job_type: jobType.value  || undefined,
+        sort_by:  sortBy.value,
+      },
+    })
+    jobs.value = res.data
+  } catch {
+    jobs.value = []
+  } finally {
+    loading.value = false
+  }
+}
 
-function applyFilter() {
+let searchTimer: ReturnType<typeof setTimeout>
+function scheduleSearch() {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(fetchJobs, 300)
+}
+
+watch(keyword, scheduleSearch)
+watch([city, jobType, sortBy], () => {
   router.replace({
     query: {
       ...(keyword.value  && { q:    keyword.value }),
@@ -62,16 +64,10 @@ function applyFilter() {
       ...(sortBy.value !== 'newest' && { sort: sortBy.value }),
     },
   })
-}
-
-watch([keyword, city, jobType, sortBy], applyFilter)
-
-onMounted(() => {
-  keyword.value = (route.query.q    as string) ?? ''
-  city.value    = (route.query.city as string) ?? ''
-  jobType.value = (route.query.type as string) ?? ''
-  sortBy.value  = (route.query.sort as string) ?? 'newest'
+  fetchJobs()
 })
+
+onMounted(fetchJobs)
 </script>
 
 <template>
@@ -117,7 +113,7 @@ onMounted(() => {
     <div class="container jobs-content">
       <div class="jobs-meta">
         <span v-if="!loading">
-          共 <strong>{{ filtered.length }}</strong> 个职位
+          共 <strong>{{ jobs.length }}</strong> 个职位
           <template v-if="keyword"> · "{{ keyword }}"</template>
         </span>
       </div>
@@ -126,14 +122,16 @@ onMounted(() => {
         <div v-for="n in 5" :key="n" class="skeleton-card"></div>
       </div>
 
-      <div v-else-if="filtered.length === 0" class="jobs-empty">
-        <div class="jobs-empty__icon" aria-hidden="true">🌱</div>
+      <div v-else-if="jobs.length === 0" class="jobs-empty">
+        <div class="jobs-empty__icon" aria-hidden="true">
+          <Sprout :size="48" :stroke-width="1.2" />
+        </div>
         <h3 class="jobs-empty__title">暂无符合条件的职位</h3>
         <p class="jobs-empty__desc">试试调整搜索条件，或&nbsp;<button class="link-btn" @click="keyword = ''; city = ''; jobType = ''">清除筛选</button></p>
       </div>
 
       <ul v-else class="jobs-list" role="list">
-        <li v-for="job in filtered" :key="job.id">
+        <li v-for="job in jobs" :key="job.id">
           <JobCard :job="job" variant="list" />
         </li>
       </ul>
@@ -255,7 +253,7 @@ onMounted(() => {
   padding-block: var(--space-20);
   color: var(--gs-text-3);
 }
-.jobs-empty__icon { font-size: 3rem; margin-bottom: var(--space-4); }
+.jobs-empty__icon { display: flex; justify-content: center; margin-bottom: var(--space-4); color: var(--gs-primary); opacity: 0.5; }
 .jobs-empty__title { font-size: var(--text-xl); font-weight: 600; color: var(--gs-text-2); margin-bottom: var(--space-2); }
 .jobs-empty__desc { font-size: var(--text-base); }
 
@@ -276,6 +274,7 @@ onMounted(() => {
   border: 1px solid var(--gs-border);
   border-radius: var(--radius-lg);
   animation: pulse 1.4s ease-in-out infinite;
+  margin-bottom: var(--space-3);
 }
 @keyframes pulse {
   0%, 100% { opacity: 1; }

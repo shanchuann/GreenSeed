@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { GraduationCap, Building2 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -12,8 +13,9 @@ const form = reactive({
   password: '',
   role:     '' as 'seeker' | 'recruiter' | '',
 })
-const error   = ref('')
-const loading = ref(false)
+const error     = ref('')
+const loading   = ref(false)
+const needEmail = ref(false)
 
 async function submit() {
   if (!form.role) { error.value = '请选择注册身份'; return }
@@ -26,7 +28,12 @@ async function submit() {
       password: form.password,
       role:     form.role,
     })
-    router.push('/')
+    if (auth.token) {
+      router.push('/')
+    } else {
+      // email confirmation required
+      needEmail.value = true
+    }
   } catch (e: any) {
     error.value = e?.response?.data?.detail ?? '注册失败，请检查信息后重试'
   } finally {
@@ -37,11 +44,24 @@ async function submit() {
 
 <template>
   <div class="auth-page">
-    <div class="auth-card fade-up">
+    <!-- Email confirmation notice -->
+    <div v-if="needEmail" class="auth-card fade-up" style="text-align:center">
       <div class="auth-card__header">
         <RouterLink to="/" class="auth-logo">
-          <span class="auth-logo__main">青禾</span>
-          <span class="auth-logo__sub">招聘</span>
+          <span class="auth-logo__text">青禾<em class="auth-logo__accent">招聘</em></span>
+        </RouterLink>
+        <h1 class="auth-card__title">验证邮箱</h1>
+        <p class="auth-card__subtitle" style="margin-top: var(--space-3)">
+          我们已向 <strong>{{ form.email }}</strong> 发送了验证邮件，<br>请点击邮件中的链接完成注册。
+        </p>
+      </div>
+      <RouterLink to="/login" class="btn btn--primary" style="margin-top: var(--space-6); width: 100%">前往登录</RouterLink>
+    </div>
+
+    <div v-else class="auth-card fade-up">
+      <div class="auth-card__header">
+        <RouterLink to="/" class="auth-logo">
+          <span class="auth-logo__text">青禾<em class="auth-logo__accent">招聘</em></span>
         </RouterLink>
         <h1 class="auth-card__title">创建账号</h1>
         <p class="auth-card__subtitle">加入青禾，开启你的职场新篇章</p>
@@ -55,7 +75,7 @@ async function submit() {
           :class="{ 'role-card--active': form.role === 'seeker' }"
           @click="form.role = 'seeker'"
         >
-          <span class="role-card__icon" aria-hidden="true">🎓</span>
+          <GraduationCap :size="24" :stroke-width="1.5" class="role-card__icon" aria-hidden="true" />
           <span class="role-card__name">我是求职者</span>
           <span class="role-card__desc">浏览职位，投递简历</span>
         </button>
@@ -65,7 +85,7 @@ async function submit() {
           :class="{ 'role-card--active': form.role === 'recruiter' }"
           @click="form.role = 'recruiter'"
         >
-          <span class="role-card__icon" aria-hidden="true">🏢</span>
+          <Building2 :size="24" :stroke-width="1.5" class="role-card__icon" aria-hidden="true" />
           <span class="role-card__name">我是招聘方</span>
           <span class="role-card__desc">发布职位，寻找人才</span>
         </button>
@@ -157,23 +177,20 @@ async function submit() {
 .auth-logo {
   display: inline-flex;
   align-items: baseline;
-  gap: 3px;
   text-decoration: none;
   margin-bottom: var(--space-5);
 }
-.auth-logo__main {
+.auth-logo__text {
   font-family: var(--font-display);
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--gs-ink);
   letter-spacing: -0.04em;
+  font-style: normal;
 }
-.auth-logo__sub {
-  font-family: var(--font-display);
-  font-size: 0.875rem;
-  font-weight: 400;
+.auth-logo__accent {
   color: var(--gs-primary);
-  letter-spacing: 0.06em;
+  font-style: normal;
 }
 
 .auth-card__title {
@@ -216,10 +233,11 @@ async function submit() {
   background: var(--gs-primary-tint);
 }
 
-.role-card__icon { font-size: 1.5rem; line-height: 1; }
+.role-card__icon { color: var(--gs-text-2); }
 .role-card__name { font-size: var(--text-sm); font-weight: 600; color: var(--gs-text); }
 .role-card__desc { font-size: var(--text-xs); color: var(--gs-text-3); }
 .role-card--active .role-card__name { color: var(--gs-primary); }
+.role-card--active .role-card__icon { color: var(--gs-primary); }
 
 /* Form */
 .auth-form { display: flex; flex-direction: column; gap: var(--space-4); }

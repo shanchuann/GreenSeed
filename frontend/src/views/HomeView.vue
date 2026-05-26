@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Monitor, TrendingUp, Palette, Megaphone, BookOpen, Briefcase,
 } from 'lucide-vue-next'
+import api from '@/api'
 import JobCard, { type Job } from '@/components/ui/JobCard.vue'
 
 const router  = useRouter()
@@ -17,88 +18,33 @@ function search() {
 const hotKeywords = ['产品经理', '前端开发', 'UI 设计', '数据分析', '运营']
 
 const categories = [
-  { label: '互联网·软件', icon: Monitor,    count: 482 },
-  { label: '金融·投资',   icon: TrendingUp, count: 136 },
-  { label: '设计·创意',   icon: Palette,    count: 94  },
-  { label: '市场·运营',   icon: Megaphone,  count: 217 },
-  { label: '教育·培训',   icon: BookOpen,   count: 68  },
-  { label: '咨询·管理',   icon: Briefcase,  count: 55  },
+  { label: '互联网·软件', icon: Monitor,    count: null as number | null },
+  { label: '金融·投资',   icon: TrendingUp, count: null as number | null },
+  { label: '设计·创意',   icon: Palette,    count: null as number | null },
+  { label: '市场·运营',   icon: Megaphone,  count: null as number | null },
+  { label: '教育·培训',   icon: BookOpen,   count: null as number | null },
+  { label: '咨询·管理',   icon: Briefcase,  count: null as number | null },
 ]
 
 const stats = [
-  { value: '1,234', unit: '家', label: '入驻企业' },
-  { value: '5,678', unit: '个', label: '在招职位' },
-  { value: '12,000', unit: '+', label: '注册求职者' },
+  { value: '—', unit: '家', label: '入驻企业' },
+  { value: '—', unit: '个', label: '在招职位' },
+  { value: '—', unit: '+', label: '注册求职者' },
 ]
 
-const featuredJobs: Job[] = [
-  {
-    id: '1',
-    title: '产品经理（实习）',
-    company_name: '字节跳动',
-    location: '北京',
-    job_type: 'intern',
-    salary_min: 4000,
-    salary_max: 6000,
-    tags: ['产品规划', 'B端', '数据驱动'],
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-  {
-    id: '2',
-    title: '前端开发工程师',
-    company_name: '美团',
-    location: '上海',
-    job_type: 'full',
-    salary_min: 15000,
-    salary_max: 25000,
-    tags: ['Vue3', 'TypeScript', 'Node.js'],
-    created_at: new Date(Date.now() - 172800000).toISOString(),
-  },
-  {
-    id: '3',
-    title: 'UI/UX 设计师',
-    company_name: '网易',
-    location: '杭州',
-    job_type: 'full',
-    salary_min: 12000,
-    salary_max: 18000,
-    tags: ['Figma', '用户研究', '交互设计'],
-    created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-  },
-  {
-    id: '4',
-    title: '数据分析师（校招）',
-    company_name: '阿里巴巴',
-    location: '杭州',
-    job_type: 'full',
-    salary_min: 13000,
-    salary_max: 20000,
-    tags: ['Python', 'SQL', '数据可视化'],
-    created_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-  },
-  {
-    id: '5',
-    title: '运营专员（兼职）',
-    company_name: '小红书',
-    location: '上海',
-    job_type: 'part',
-    salary_min: 6000,
-    salary_max: 9000,
-    tags: ['内容运营', '社区', '数据分析'],
-    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-  },
-  {
-    id: '6',
-    title: '后端开发（实习）',
-    company_name: '腾讯',
-    location: '深圳',
-    job_type: 'intern',
-    salary_min: 5000,
-    salary_max: 8000,
-    tags: ['Java', 'Spring Boot', 'MySQL'],
-    created_at: new Date(Date.now() - 6 * 86400000).toISOString(),
-  },
-]
+const featuredJobs = ref<Job[]>([])
+const featuredLoading = ref(true)
+
+onMounted(async () => {
+  try {
+    const res = await api.get('/jobs', { params: { limit: 6, sort_by: 'newest' } })
+    featuredJobs.value = res.data
+  } catch {
+    // silently ignore — page still works without featured jobs
+  } finally {
+    featuredLoading.value = false
+  }
+})
 </script>
 
 <template>
@@ -186,7 +132,7 @@ const featuredJobs: Job[] = [
         >
           <span class="category-card__icon" aria-hidden="true"><component :is="cat.icon" :size="22" :stroke-width="1.5" /></span>
           <span class="category-card__label">{{ cat.label }}</span>
-          <span class="category-card__count">{{ cat.count }} 个职位</span>
+          <span class="category-card__count">{{ cat.count !== null ? `${cat.count} 个职位` : '浏览职位' }}</span>
         </RouterLink>
       </div>
     </div>
@@ -200,7 +146,10 @@ const featuredJobs: Job[] = [
         <RouterLink to="/jobs" class="section__more">查看全部 →</RouterLink>
       </header>
 
-      <div class="jobs-grid">
+      <div v-if="featuredLoading" class="jobs-grid">
+        <div v-for="n in 6" :key="n" class="skeleton-job-card"></div>
+      </div>
+      <div v-else class="jobs-grid">
         <JobCard
           v-for="job in featuredJobs"
           :key="job.id"
@@ -510,6 +459,15 @@ const featuredJobs: Job[] = [
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: var(--space-4);
 }
+
+.skeleton-job-card {
+  height: 140px;
+  background: var(--gs-surface);
+  border: 1px solid var(--gs-border);
+  border-radius: var(--radius-lg);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
 
 /* ── CTA banner ── */
 .cta-section {
