@@ -11,6 +11,34 @@ router = APIRouter()
 AdminOrRecruiter = Annotated[dict, Depends(require_role("recruiter", "admin"))]
 
 
+# ── Recruiter: my jobs (all statuses) ────────────────────────────
+
+@router.get("/mine", response_model=list[JobOut])
+async def my_jobs(
+    user: AdminOrRecruiter,
+    db:   Annotated[Client, Depends(get_supabase_admin)],
+):
+    """返回当前招聘方旗下所有职位（含已关闭），供招聘管理页使用。"""
+    company_res = (
+        db.table("companies")
+        .select("id")
+        .eq("recruiter_id", user["id"])
+        .execute()
+    )
+    company_ids = [c["id"] for c in company_res.data]
+    if not company_ids:
+        return []
+
+    res = (
+        db.table("jobs")
+        .select("*, company:companies(*)")
+        .in_("company_id", company_ids)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return res.data
+
+
 # ── List / Search ─────────────────────────────────────────────────
 
 @router.get("", response_model=list[JobOut])

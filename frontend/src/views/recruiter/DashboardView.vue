@@ -13,12 +13,10 @@ onMounted(async () => {
   try {
     const [cRes, jRes] = await Promise.all([
       api.get('/companies/mine'),
-      api.get('/jobs', { params: { limit: 100 } }),
+      api.get('/jobs/mine'),
     ])
     companies.value = cRes.data
-    // Filter jobs belonging to recruiter's companies
-    const myCompanyIds = new Set(companies.value.map((c: any) => c.id))
-    jobs.value = jRes.data.filter((j: any) => myCompanyIds.has(j.company_id))
+    jobs.value = jRes.data
   } finally {
     loading.value = false
   }

@@ -51,6 +51,7 @@ class CompanyCreate(BaseModel):
     logo_url: Optional[str] = None
     industry: Optional[str] = None
     location: Optional[str] = None
+    website: Optional[str] = None
 
 
 class CompanyUpdate(BaseModel):
@@ -59,6 +60,7 @@ class CompanyUpdate(BaseModel):
     logo_url: Optional[str] = None
     industry: Optional[str] = None
     location: Optional[str] = None
+    website: Optional[str] = None
 
 
 class CompanyOut(BaseModel):
@@ -69,6 +71,7 @@ class CompanyOut(BaseModel):
     logo_url: Optional[str] = None
     industry: Optional[str] = None
     location: Optional[str] = None
+    website: Optional[str] = None
     verified: bool
     created_at: datetime
 

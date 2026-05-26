@@ -41,6 +41,14 @@ async def register(
         raise HTTPException(500, f"创建用户资料失败：{exc}") from exc
 
     profile = profile_res.data[0]
+
+    # 若启用了邮件确认，session 为 None，返回空 token 提示用户验邮箱
+    if not auth_res.session:
+        return AuthResponse(
+            access_token="",
+            user=UserOut(**profile),
+        )
+
     return AuthResponse(
         access_token=auth_res.session.access_token,
         user=UserOut(**profile),

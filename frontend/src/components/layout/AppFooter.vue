@@ -9,7 +9,7 @@
         <RouterLink to="/jobs">浏览职位</RouterLink>
         <RouterLink to="/register">注册加入</RouterLink>
       </div>
-      <p class="footer__copy">© {{ year }} GreenSeed · 课程大作业项目</p>
+      <p class="footer__copy">© {{ year }} GreenSeed · 山川不念旧</p>
     </div>
   </footer>
 </template>

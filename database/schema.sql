@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS public.companies (
   logo_url      TEXT,
   industry      TEXT,
   location      TEXT,
+  website       TEXT,
   verified      BOOLEAN     NOT NULL DEFAULT FALSE,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
