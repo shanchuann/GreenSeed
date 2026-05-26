@@ -85,6 +85,9 @@ router.beforeEach((to) => {
   if (to.meta.guestOnly && auth.isLoggedIn) {
     return { name: 'home' }
   }
+  if (to.meta.role && auth.user?.role !== to.meta.role) {
+    return { name: 'home' }
+  }
 })
 
 export default router

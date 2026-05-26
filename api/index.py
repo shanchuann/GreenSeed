@@ -1,11 +1,15 @@
-from fastapi import FastAPI
+from typing import Annotated
+
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from supabase import Client
 import os
 
 load_dotenv()
 
 from api.routers import auth, jobs, applications, companies, admin, seed
+from api.deps import get_supabase_admin
 
 app = FastAPI(
     title="GreenSeed API",
@@ -37,3 +41,24 @@ app.include_router(seed.router,         prefix="/api/seed",         tags=["seed"
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/stats")
+async def public_stats(db: Annotated[Client, Depends(get_supabase_admin)]):
+    """公开统计数据，供主页展示，无需登录。"""
+    open_jobs     = db.table("jobs").select("id", count="exact").eq("status", "open").execute().count or 0
+    company_count = db.table("companies").select("id", count="exact").execute().count or 0
+    seeker_count  = db.table("profiles").select("id", count="exact").eq("role", "seeker").execute().count or 0
+
+    jobs_raw = db.table("jobs").select("category").eq("status", "open").execute().data
+    cat_counts: dict[str, int] = {}
+    for row in jobs_raw:
+        cat = row.get("category") or "其他"
+        cat_counts[cat] = cat_counts.get(cat, 0) + 1
+
+    return {
+        "companies": company_count,
+        "open_jobs": open_jobs,
+        "seekers":   seeker_count,
+        "jobs_by_category": cat_counts,
+    }

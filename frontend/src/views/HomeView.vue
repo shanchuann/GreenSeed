@@ -18,20 +18,22 @@ function search() {
 
 const hotKeywords = ['产品经理', '前端开发', 'UI 设计', '数据分析', '运营']
 
-const categories = [
-  { label: '互联网·软件', icon: Monitor,    count: null as number | null },
-  { label: '金融·投资',   icon: TrendingUp, count: null as number | null },
-  { label: '设计·创意',   icon: Palette,    count: null as number | null },
-  { label: '市场·运营',   icon: Megaphone,  count: null as number | null },
-  { label: '教育·培训',   icon: BookOpen,   count: null as number | null },
-  { label: '咨询·管理',   icon: Briefcase,  count: null as number | null },
+const categoryDefs = [
+  { label: '互联网·软件', icon: Monitor    },
+  { label: '金融·投资',   icon: TrendingUp },
+  { label: '设计·创意',   icon: Palette    },
+  { label: '市场·运营',   icon: Megaphone  },
+  { label: '教育·培训',   icon: BookOpen   },
+  { label: '咨询·管理',   icon: Briefcase  },
 ]
 
-const stats = [
+const categories = ref(categoryDefs.map(c => ({ ...c, count: null as number | null })))
+
+const stats = ref([
   { value: '—', unit: '家', label: '入驻企业' },
   { value: '—', unit: '个', label: '在招职位' },
   { value: '—', unit: '+', label: '注册求职者' },
-]
+])
 
 const cityOptions: SelectOption[] = [
   { value: '', label: '全国' },
@@ -42,13 +44,26 @@ const featuredJobs = ref<Job[]>([])
 const featuredLoading = ref(true)
 
 onMounted(async () => {
-  try {
-    const res = await api.get('/jobs', { params: { limit: 6, sort_by: 'newest' } })
-    featuredJobs.value = res.data
-  } catch {
-    // silently ignore — page still works without featured jobs
-  } finally {
-    featuredLoading.value = false
+  const [jobsRes, statsRes] = await Promise.allSettled([
+    api.get('/jobs', { params: { limit: 6, sort_by: 'newest' } }),
+    api.get('/stats'),
+  ])
+
+  if (jobsRes.status === 'fulfilled') {
+    featuredJobs.value = jobsRes.value.data
+  }
+  featuredLoading.value = false
+
+  if (statsRes.status === 'fulfilled') {
+    const s = statsRes.value.data
+    stats.value[0].value = s.companies
+    stats.value[1].value = s.open_jobs
+    stats.value[2].value = s.seekers
+    const catMap: Record<string, number> = s.jobs_by_category ?? {}
+    categories.value = categories.value.map(c => ({
+      ...c,
+      count: catMap[c.label] ?? 0,
+    }))
   }
 })
 </script>
@@ -181,7 +196,6 @@ onMounted(async () => {
 /* ── Hero ── */
 .hero {
   position: relative;
-  overflow: hidden;
   padding-block: var(--space-16) var(--space-20);
   background: var(--gs-bg);
 }

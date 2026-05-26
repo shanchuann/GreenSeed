@@ -13,8 +13,11 @@ const keyword  = ref((route.query.q    as string) ?? '')
 const city     = ref((route.query.city as string) ?? '')
 const jobType  = ref((route.query.type as string) ?? '')
 const sortBy   = ref((route.query.sort as string) ?? 'newest')
-const loading  = ref(false)
-const jobs     = ref<Job[]>([])
+const loading     = ref(false)
+const loadingMore = ref(false)
+const jobs        = ref<Job[]>([])
+const hasMore     = ref(false)
+const PAGE        = 20
 
 const typeOptions: SelectOption[] = [
   { value: '',       label: '全部类型' },
@@ -33,22 +36,41 @@ const cityOptions: SelectOption[] = [
   ...['北京','上海','杭州','深圳','广州','成都','武汉'].map(c => ({ value: c, label: c })),
 ]
 
+function buildParams(offset = 0) {
+  return {
+    q:        keyword.value  || undefined,
+    city:     city.value     || undefined,
+    job_type: jobType.value  || undefined,
+    sort_by:  sortBy.value,
+    limit:    PAGE + 1,
+    offset,
+  }
+}
+
 async function fetchJobs() {
   loading.value = true
   try {
-    const res = await api.get('/jobs', {
-      params: {
-        q:        keyword.value  || undefined,
-        city:     city.value     || undefined,
-        job_type: jobType.value  || undefined,
-        sort_by:  sortBy.value,
-      },
-    })
-    jobs.value = res.data
+    const res = await api.get('/jobs', { params: buildParams(0) })
+    const data: Job[] = res.data
+    hasMore.value = data.length > PAGE
+    jobs.value = data.slice(0, PAGE)
   } catch {
     jobs.value = []
+    hasMore.value = false
   } finally {
     loading.value = false
+  }
+}
+
+async function loadMore() {
+  loadingMore.value = true
+  try {
+    const res = await api.get('/jobs', { params: buildParams(jobs.value.length) })
+    const data: Job[] = res.data
+    hasMore.value = data.length > PAGE
+    jobs.value.push(...data.slice(0, PAGE))
+  } finally {
+    loadingMore.value = false
   }
 }
 
@@ -134,6 +156,13 @@ onMounted(fetchJobs)
           <JobCard :job="job" variant="list" />
         </li>
       </ul>
+
+      <div v-if="hasMore && !loading" class="load-more">
+        <button class="load-more__btn" :disabled="loadingMore" @click="loadMore">
+          <span v-if="loadingMore" class="load-more__spinner" aria-hidden="true"></span>
+          {{ loadingMore ? '加载中…' : '加载更多职位' }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -266,4 +295,42 @@ onMounted(fetchJobs)
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.5; }
 }
+
+/* ── Load more ── */
+.load-more {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-6);
+}
+
+.load-more__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 40px;
+  padding-inline: var(--space-6);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--gs-text-2);
+  background: var(--gs-surface);
+  border: 1.5px solid var(--gs-border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: border-color var(--duration-fast), color var(--duration-fast);
+}
+.load-more__btn:hover:not(:disabled) {
+  border-color: var(--gs-primary);
+  color: var(--gs-primary);
+}
+.load-more__btn:disabled { opacity: 0.6; cursor: default; }
+
+.load-more__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--gs-border);
+  border-top-color: var(--gs-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
