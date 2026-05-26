@@ -6,7 +6,8 @@ import {
 } from 'lucide-vue-next'
 import api from '@/api'
 import JobCard, { type Job } from '@/components/ui/JobCard.vue'
-import GsSelect, { type SelectOption } from '@/components/ui/GsSelect.vue'
+import GsSelect from '@/components/ui/GsSelect.vue'
+import { cityOptions } from '@/constants/cities'
 
 const router  = useRouter()
 const keyword = ref('')
@@ -35,10 +36,6 @@ const stats = ref([
   { value: '—', unit: '+', label: '注册求职者' },
 ])
 
-const cityOptions: SelectOption[] = [
-  { value: '', label: '全国' },
-  ...['北京','上海','杭州','深圳','广州','成都','武汉'].map(c => ({ value: c, label: c })),
-]
 
 const featuredJobs = ref<Job[]>([])
 const featuredLoading = ref(true)

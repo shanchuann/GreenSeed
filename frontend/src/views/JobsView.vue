@@ -5,6 +5,7 @@ import { Sprout } from 'lucide-vue-next'
 import api from '@/api'
 import JobCard, { type Job } from '@/components/ui/JobCard.vue'
 import GsSelect, { type SelectOption } from '@/components/ui/GsSelect.vue'
+import { cityOptions } from '@/constants/cities'
 
 const route  = useRoute()
 const router = useRouter()
@@ -31,10 +32,6 @@ const sortOptions: SelectOption[] = [
   { value: 'salary', label: '薪资最高' },
 ]
 
-const cityOptions: SelectOption[] = [
-  { value: '', label: '全国' },
-  ...['北京','上海','杭州','深圳','广州','成都','武汉'].map(c => ({ value: c, label: c })),
-]
 
 function buildParams(offset = 0) {
   return {

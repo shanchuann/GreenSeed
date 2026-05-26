@@ -161,8 +161,17 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onClickOutside, 
   list-style: none;
   z-index: 200;
   padding: var(--space-1);
-  overflow: hidden;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
+.gs-select__menu::-webkit-scrollbar { width: 4px; }
+.gs-select__menu::-webkit-scrollbar-track { background: transparent; }
+.gs-select__menu::-webkit-scrollbar-thumb {
+  background: var(--gs-border);
+  border-radius: 2px;
+}
+.gs-select__menu::-webkit-scrollbar-thumb:hover { background: var(--gs-text-3); }
 
 .gs-select__option {
   padding: var(--space-2) var(--space-3);
