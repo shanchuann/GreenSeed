@@ -19,7 +19,6 @@ const personal = reactive({
   birth_month:  null as number | null,
   desired_city: '',
   wechat:       '',
-  education:    '',
 })
 
 // ── Bio ───────────────────────────────────────────────────────────
@@ -87,7 +86,6 @@ function initForm(u: any) {
   personal.birth_month  = u.birth_month  ?? null
   personal.desired_city = u.desired_city ?? ''
   personal.wechat       = u.wechat       ?? ''
-  personal.education    = u.education    ?? ''
 
   bio.value       = u.bio       ?? ''
   education.value = u.education ?? ''
@@ -117,7 +115,7 @@ async function saveSection(section: string) {
     name: personal.name, phone: personal.phone, gender: personal.gender,
     job_status: personal.job_status, birth_year: personal.birth_year,
     birth_month: personal.birth_month, desired_city: personal.desired_city,
-    wechat: personal.wechat, education: personal.education,
+    wechat: personal.wechat,
   }
   if (section === 'bio')       payload = { bio: bio.value }
   if (section === 'desired')   payload = {
@@ -237,13 +235,12 @@ onUnmounted(() => { observer?.disconnect() })
             <input v-model="personal.phone" class="input" type="tel" placeholder="138..." />
           </div>
           <div class="field">
-            <label class="field__label">性别</label>
-            <div class="radio-row">
-              <label v-for="g in genderOptions" :key="g.value" class="radio-label">
-                <input type="radio" v-model="personal.gender" :value="g.value" class="radio-input" />
-                <span>{{ g.label }}</span>
-              </label>
-            </div>
+            <label class="field__label">所在城市</label>
+            <input v-model="personal.desired_city" class="input" placeholder="例：北京" />
+          </div>
+          <div class="field">
+            <label class="field__label">微信号（选填）</label>
+            <input v-model="personal.wechat" class="input" placeholder="WeChat ID" />
           </div>
           <div class="field">
             <label class="field__label">求职状态</label>
@@ -255,32 +252,32 @@ onUnmounted(() => { observer?.disconnect() })
             </div>
           </div>
           <div class="field">
-            <label class="field__label">出生年份</label>
-            <div class="select-wrap">
-              <select v-model.number="personal.birth_year" class="input">
-                <option value="" disabled>选择年份</option>
-                <option v-for="y in birthYearOpts" :key="y" :value="y">{{ y }} 年</option>
-              </select>
-              <ChevronDown :size="14" class="select-icon" />
+            <label class="field__label">性别</label>
+            <div class="radio-row">
+              <label v-for="g in genderOptions" :key="g.value" class="radio-label">
+                <input type="radio" v-model="personal.gender" :value="g.value" class="radio-input" />
+                <span>{{ g.label }}</span>
+              </label>
             </div>
           </div>
-          <div class="field">
-            <label class="field__label">出生月份</label>
-            <div class="select-wrap">
-              <select v-model.number="personal.birth_month" class="input">
-                <option value="" disabled>选择月份</option>
-                <option v-for="m in birthMonthOpts" :key="m" :value="m">{{ m }} 月</option>
-              </select>
-              <ChevronDown :size="14" class="select-icon" />
+          <div class="field field--full">
+            <label class="field__label">出生日期</label>
+            <div class="birth-date-row">
+              <div class="select-wrap">
+                <select v-model.number="personal.birth_year" class="input">
+                  <option value="" disabled>选择年份</option>
+                  <option v-for="y in birthYearOpts" :key="y" :value="y">{{ y }} 年</option>
+                </select>
+                <ChevronDown :size="14" class="select-icon" />
+              </div>
+              <div class="select-wrap">
+                <select v-model.number="personal.birth_month" class="input">
+                  <option value="" disabled>选择月份</option>
+                  <option v-for="m in birthMonthOpts" :key="m" :value="m">{{ m }} 月</option>
+                </select>
+                <ChevronDown :size="14" class="select-icon" />
+              </div>
             </div>
-          </div>
-          <div class="field">
-            <label class="field__label">所在城市</label>
-            <input v-model="personal.desired_city" class="input" placeholder="例：北京" />
-          </div>
-          <div class="field">
-            <label class="field__label">微信号（选填）</label>
-            <input v-model="personal.wechat" class="input" placeholder="WeChat ID" />
           </div>
         </div>
       </section>
@@ -563,9 +560,16 @@ onUnmounted(() => { observer?.disconnect() })
 .rs-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 .field--full { grid-column: 1 / -1; }
+
+/* ── Birth date ── */
+.birth-date-row {
+  display: flex;
+  gap: var(--space-3);
+}
+.birth-date-row .select-wrap { flex: 1; }
 
 /* ── Fields ── */
 .field { display: flex; flex-direction: column; gap: var(--space-2); }
