@@ -85,29 +85,33 @@ async function saveResumeUrl() {
 
 <template>
   <div class="page-wrap">
-    <div class="container container--narrow">
-      <h1 class="page-title fade-up">个人资料</h1>
+    <div class="container">
 
-      <!-- Avatar header -->
-      <div class="profile-header fade-up">
-        <div class="profile-avatar-wrap">
-          <div class="profile-avatar" :class="{ 'profile-avatar--uploading': avatarUploading }">
-            <img v-if="auth.user?.avatar_url" :src="auth.user.avatar_url" class="profile-avatar__img" alt="头像" />
-            <span v-else>{{ auth.user?.name?.[0]?.toUpperCase() ?? '?' }}</span>
+      <!-- ── Profile hero ───────────────────────────────────────── -->
+      <div class="profile-hero fade-up">
+        <div class="profile-hero__banner"></div>
+        <div class="profile-hero__body">
+          <div class="profile-avatar-wrap">
+            <div class="profile-avatar" :class="{ 'profile-avatar--uploading': avatarUploading }">
+              <img v-if="auth.user?.avatar_url" :src="auth.user.avatar_url" class="profile-avatar__img" alt="头像" />
+              <span v-else>{{ auth.user?.name?.[0]?.toUpperCase() ?? '?' }}</span>
+            </div>
+            <label class="profile-avatar__camera" :title="avatarUploading ? '上传中…' : '修改头像'">
+              <Camera :size="13" />
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" @change="uploadAvatar" :disabled="avatarUploading" />
+            </label>
           </div>
-          <label class="profile-avatar__camera" :title="avatarUploading ? '上传中…' : '修改头像'">
-            <Camera :size="13" />
-            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" @change="uploadAvatar" :disabled="avatarUploading" />
-          </label>
-        </div>
-        <div>
-          <p class="profile-name">{{ auth.user?.name }}</p>
-          <span class="tag tag--green">{{ auth.user?.role === 'seeker' ? '求职者' : '招聘方' }}</span>
-          <p v-if="avatarError" class="avatar-error">{{ avatarError }}</p>
+          <div class="profile-hero__info">
+            <h1 class="profile-name">{{ auth.user?.name ?? '—' }}</h1>
+            <div class="profile-badges">
+              <span class="tag tag--green">{{ auth.user?.role === 'seeker' ? '求职者' : '招聘方' }}</span>
+            </div>
+            <p v-if="avatarError" class="avatar-error">{{ avatarError }}</p>
+          </div>
         </div>
       </div>
 
-      <!-- Tab nav -->
+      <!-- ── Tab nav ───────────────────────────────────────────── -->
       <nav class="tab-nav fade-up" role="tablist">
         <button
           v-for="tab in [
@@ -122,63 +126,61 @@ async function saveResumeUrl() {
           @click="activeTab = (tab.key as any)"
         >{{ tab.label }}</button>
       </nav>
-    </div>
 
-    <!-- Tab content — full-width for online-resume, narrow otherwise -->
-    <div class="container" :class="{ 'container--narrow': activeTab !== 'online-resume' }">
-
-      <!-- ── 在线简历 ─────────────────────────────────────── -->
+      <!-- ── 在线简历 ───────────────────────────────────────────── -->
       <ResumeEditor v-if="activeTab === 'online-resume'" />
 
-      <!-- ── 我的简历 ─────────────────────────────────────── -->
-      <div v-else-if="activeTab === 'resume'" class="profile-card fade-up">
-        <div v-if="resumeUrl" class="resume-current">
-          <FileText :size="20" color="var(--gs-primary)" />
-          <span class="resume-current__name">当前简历</span>
-          <a :href="resumeUrl" target="_blank" rel="noopener" class="btn btn--ghost btn--sm">
-            <ExternalLink :size="13" style="margin-right:3px" />查看
-          </a>
-        </div>
-        <div v-else class="resume-empty">
-          <FileText :size="40" color="var(--gs-text-3)" />
-          <p>尚未上传简历</p>
-        </div>
+      <!-- ── 我的简历 ───────────────────────────────────────────── -->
+      <div v-else-if="activeTab === 'resume'" class="resume-tab-content fade-up">
+        <div class="profile-card">
+          <div v-if="resumeUrl" class="resume-current">
+            <FileText :size="20" color="var(--gs-primary)" />
+            <span class="resume-current__name">当前简历</span>
+            <a :href="resumeUrl" target="_blank" rel="noopener" class="btn btn--ghost btn--sm">
+              <ExternalLink :size="13" style="margin-right:3px" />查看
+            </a>
+          </div>
+          <div v-else class="resume-empty">
+            <FileText :size="40" color="var(--gs-text-3)" />
+            <p>尚未上传简历</p>
+          </div>
 
-        <hr class="divider" style="margin-block:var(--space-6)" />
+          <hr class="divider" style="margin-block:var(--space-6)" />
 
-        <div class="field">
-          <label class="field__label">上传附件简历</label>
-          <p class="field__hint">支持 PDF、DOC、DOCX 格式，建议 5MB 以内</p>
-          <label class="upload-zone">
-            <Upload :size="22" color="var(--gs-primary)" />
-            <span v-if="resumeFile">{{ resumeFile.name }}</span>
-            <span v-else>点击选择文件</span>
-            <input type="file" accept=".pdf,.doc,.docx" style="display:none" @change="onFileChange" />
-          </label>
-          <p v-if="uploadError" class="field__error">{{ uploadError }}</p>
-          <button
-            v-if="resumeFile"
-            type="button"
-            class="btn btn--primary"
-            style="margin-top:var(--space-3)"
-            :disabled="uploading"
-            @click="uploadResume"
-          >{{ uploading ? '上传中…' : '确认上传' }}</button>
-        </div>
+          <div class="field">
+            <label class="field__label">上传附件简历</label>
+            <p class="field__hint">支持 PDF、DOC、DOCX 格式，建议 5MB 以内</p>
+            <label class="upload-zone">
+              <Upload :size="22" color="var(--gs-primary)" />
+              <span v-if="resumeFile">{{ resumeFile.name }}</span>
+              <span v-else>点击选择文件</span>
+              <input type="file" accept=".pdf,.doc,.docx" style="display:none" @change="onFileChange" />
+            </label>
+            <p v-if="uploadError" class="field__error">{{ uploadError }}</p>
+            <button
+              v-if="resumeFile"
+              type="button"
+              class="btn btn--primary"
+              style="margin-top:var(--space-3)"
+              :disabled="uploading"
+              @click="uploadResume"
+            >{{ uploading ? '上传中…' : '确认上传' }}</button>
+          </div>
 
-        <hr class="divider" style="margin-block:var(--space-6)" />
+          <hr class="divider" style="margin-block:var(--space-6)" />
 
-        <div class="field">
-          <label class="field__label">或填写在线简历链接</label>
-          <p class="field__hint">可粘贴 Google Drive、OneDrive、超简历等平台的分享链接</p>
-          <input v-model="resumeUrl" class="input" placeholder="https://…" />
-        </div>
+          <div class="field">
+            <label class="field__label">或填写在线简历链接</label>
+            <p class="field__hint">可粘贴 Google Drive、OneDrive、超简历等平台的分享链接</p>
+            <input v-model="resumeUrl" class="input" placeholder="https://…" />
+          </div>
 
-        <div class="form-actions">
-          <button class="btn btn--primary" :disabled="saving" @click="saveResumeUrl">
-            <Check v-if="saved" :size="16" style="margin-right:4px" />
-            {{ saving ? '保存中…' : saved ? '已保存 ✓' : '保存链接' }}
-          </button>
+          <div class="form-actions">
+            <button class="btn btn--primary" :disabled="saving" @click="saveResumeUrl">
+              <Check v-if="saved" :size="16" style="margin-right:4px" />
+              {{ saving ? '保存中…' : saved ? '已保存 ✓' : '保存链接' }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -189,36 +191,37 @@ async function saveResumeUrl() {
 <style scoped>
 .page-wrap { padding-block: var(--space-10); }
 
-.page-title {
-  font-family: var(--font-display);
-  font-size: var(--text-3xl);
-  font-weight: 800;
-  color: var(--gs-text);
-  letter-spacing: -0.02em;
-  margin-bottom: var(--space-6);
-}
-
-/* ── Header ── */
-.profile-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-5);
-  margin-bottom: var(--space-6);
-  padding: var(--space-5) var(--space-6);
+/* ── Hero ── */
+.profile-hero {
+  border-radius: var(--radius-xl);
   background: var(--gs-surface);
   border: 1px solid var(--gs-border);
-  border-radius: var(--radius-xl);
+  overflow: hidden;
+  margin-bottom: var(--space-5);
+  box-shadow: var(--shadow-sm);
+}
+.profile-hero__banner {
+  height: 80px;
+  background: linear-gradient(120deg, var(--gs-primary) 0%, oklch(62% 0.13 160) 100%);
+}
+.profile-hero__body {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-5);
+  padding: 0 var(--space-8) var(--space-6) var(--space-8);
+  margin-top: -44px;
 }
 
 .profile-avatar-wrap { position: relative; flex-shrink: 0; }
 .profile-avatar {
-  width: 64px; height: 64px;
+  width: 88px; height: 88px;
   border-radius: var(--radius-full);
   background: var(--gs-primary-tint);
-  border: 2px solid var(--gs-border);
+  border: 4px solid var(--gs-surface);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.12);
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-display);
-  font-size: var(--text-2xl); font-weight: 800;
+  font-size: var(--text-3xl); font-weight: 800;
   color: var(--gs-primary);
   overflow: hidden;
   transition: opacity var(--duration-fast);
@@ -226,29 +229,36 @@ async function saveResumeUrl() {
 .profile-avatar--uploading { opacity: 0.6; }
 .profile-avatar__img { width: 100%; height: 100%; object-fit: cover; }
 .profile-avatar__camera {
-  position: absolute; bottom: -2px; right: -2px;
-  width: 22px; height: 22px;
+  position: absolute; bottom: 2px; right: 2px;
+  width: 26px; height: 26px;
   display: flex; align-items: center; justify-content: center;
   background: var(--gs-primary); border: 2px solid var(--gs-surface);
   border-radius: var(--radius-full); color: #fff; cursor: pointer;
   transition: background var(--duration-fast);
 }
-.profile-avatar__camera:hover { background: var(--gs-primary-dark, oklch(45% 0.138 144)); }
+.profile-avatar__camera:hover { background: oklch(40% 0.138 144); }
 
-.profile-name { font-size: var(--text-xl); font-weight: 700; color: var(--gs-text); margin-bottom: var(--space-2); }
-.avatar-error { font-size: var(--text-xs); color: oklch(55% 0.18 25); margin-top: var(--space-1); }
+.profile-hero__info {
+  padding-bottom: var(--space-2);
+  align-self: flex-end;
+}
+.profile-name {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  color: var(--gs-text);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-2);
+}
+.profile-badges { display: flex; align-items: center; gap: var(--space-2); }
+.avatar-error { font-size: var(--text-xs); color: oklch(55% 0.18 25); margin-top: var(--space-2); }
 
-/* ── Tabs ── */
+/* ── Tab nav ── */
 .tab-nav {
   display: flex;
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-6);
   border-bottom: 2px solid var(--gs-border);
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
 }
-.tab-nav::-webkit-scrollbar { display: none; }
-
 .tab-nav__item {
   padding: var(--space-3) var(--space-5);
   font-size: var(--text-sm); font-weight: 500;
@@ -259,6 +269,11 @@ async function saveResumeUrl() {
 }
 .tab-nav__item:hover { color: var(--gs-text); }
 .tab-nav__item--active { color: var(--gs-primary); border-bottom-color: var(--gs-primary); font-weight: 600; }
+
+/* ── 我的简历 tab wrap ── */
+.resume-tab-content {
+  max-width: 680px;
+}
 
 /* ── Card ── */
 .profile-card {
