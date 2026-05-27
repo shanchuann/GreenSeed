@@ -43,6 +43,24 @@ def health():
     return {"status": "ok"}
 
 
+@app.get("/api/debug")
+def debug():
+    """诊断端点：检查环境变量是否已配置（不暴露值）。"""
+    import sys
+    keys = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_KEY", "JWT_SECRET"]
+    env_status = {k: bool(os.environ.get(k)) for k in keys}
+    try:
+        from supabase import create_client  # noqa: F401
+        supabase_importable = True
+    except Exception as e:
+        supabase_importable = str(e)
+    return {
+        "python": sys.version,
+        "env_vars_present": env_status,
+        "supabase_importable": supabase_importable,
+    }
+
+
 @app.get("/api/stats")
 async def public_stats(db: Annotated[Client, Depends(get_supabase_admin)]):
     """公开统计数据，供主页展示，无需登录。"""

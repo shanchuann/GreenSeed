@@ -83,7 +83,7 @@ onMounted(async () => {
     // ── 分类卡片滚动入场 ───────────────────────────────────
     gsap.from('.category-card', {
       scrollTrigger: { trigger: '.categories', start: 'top 82%' },
-      y: 36, opacity: 0, duration: 0.55, stagger: 0.08, ease: 'power2.out',
+      y: 36, opacity: 0, duration: 0.55, stagger: 0.04, ease: 'power2.out',
     })
 
     // ── 最新职位 section 标题 ──────────────────────────────
@@ -322,6 +322,8 @@ onUnmounted(() => {
 
 /* Search */
 .hero__search {
+  position: relative;
+  z-index: 10;
   display: flex;
   gap: var(--space-2);
   background: var(--gs-surface);
