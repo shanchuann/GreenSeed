@@ -206,7 +206,7 @@ const categoryOptions: SelectOption[] = [
 .skill-input-row { display: flex; gap: var(--space-2); }
 .skill-input-row .input { flex: 1; height: 36px; }
 .form-error { font-size: var(--text-sm); color: var(--gs-error); padding: var(--space-3) var(--space-4); background: oklch(from var(--gs-error) l c h / 0.08); border-radius: var(--radius-md); }
-.form-actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
+.form-actions { display: flex; justify-content: flex-end; align-items: center; gap: var(--space-3); }
 .no-company-hint { text-align: center; padding: var(--space-12); background: var(--gs-surface); border: 1px solid var(--gs-border); border-radius: var(--radius-xl); color: var(--gs-text-2); }
 .error-enter-active,.error-leave-active{transition:opacity .15s,transform .15s}.error-enter-from,.error-leave-to{opacity:0;transform:translateY(-4px)}
 @media (max-width: 640px) { .field-row { grid-template-columns: 1fr; } }

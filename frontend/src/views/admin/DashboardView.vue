@@ -339,8 +339,9 @@ async function adminDeleteCompany(c: any) {
 .table-wrap { overflow-x: auto; border: 1px solid var(--gs-border); border-radius: var(--radius-lg); }
 .user-table { width: 100%; border-collapse: collapse; }
 .user-table th { padding: var(--space-3) var(--space-4); font-size: var(--text-sm); font-weight: 600; color: var(--gs-text-2); background: var(--gs-surface-2); text-align: left; border-bottom: 1px solid var(--gs-border); }
-.user-table td { padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: var(--gs-text); border-bottom: 1px solid var(--gs-border); vertical-align: middle; }
+.user-table td { padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: var(--gs-text); border-bottom: 1px solid var(--gs-border); vertical-align: middle; text-align: left; }
 .user-table tr:last-child td { border-bottom: none; }
+.user-table td:last-child { white-space: nowrap; }
 .user-name { font-weight: 600; }
 .user-email { color: var(--gs-text-2); }
 .user-date  { color: var(--gs-text-3); }

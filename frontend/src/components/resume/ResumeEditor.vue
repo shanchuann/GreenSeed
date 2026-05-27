@@ -31,7 +31,6 @@ const desired = reactive({
   salary_min: null as number | null,
   salary_max: null as number | null,
   city:       '',
-  available:  '',
 })
 const posInput = ref('')
 function addPos() {
@@ -97,7 +96,6 @@ function initForm(u: any) {
   desired.salary_min = u.desired_salary_min ?? null
   desired.salary_max = u.desired_salary_max ?? null
   desired.city       = u.desired_city       ?? ''
-  desired.available  = u.available_date     ?? ''
 
   works.value    = (u.work_experience    ?? []).map((e: any) => ({ ...e }))
   projects.value = (u.project_experience ?? []).map((p: any) => ({ ...p, tech_stack: [...(p.tech_stack ?? [])] }))
@@ -124,7 +122,6 @@ async function saveSection(section: string) {
     desired_salary_min: desired.salary_min,
     desired_salary_max: desired.salary_max,
     desired_city:       desired.city,
-    available_date:     desired.available || null,
   }
   if (section === 'work')      payload = { work_experience: works.value }
   if (section === 'project')   payload = { project_experience: projects.value }
@@ -265,19 +262,23 @@ onUnmounted(() => { observer?.disconnect() })
           </div>
           <div class="field">
             <label class="field__label">性别</label>
-            <div class="radio-row">
-              <label v-for="g in genderOptions" :key="g.value" class="radio-label">
-                <input type="radio" v-model="personal.gender" :value="g.value" class="radio-input" />
-                <span>{{ g.label }}</span>
-              </label>
+            <div class="gender-btns">
+              <button
+                v-for="g in genderOptions"
+                :key="g.value"
+                type="button"
+                :class="['gender-btn', { 'gender-btn--active': personal.gender === g.value }]"
+                @click="personal.gender = g.value"
+              >{{ g.label }}</button>
             </div>
           </div>
-          <div class="field field--full">
-            <label class="field__label">出生日期</label>
-            <div class="birth-date-row">
-              <GsSelect v-model="birthYearStr" :options="birthYearSelectOpts" placeholder="选择年份" />
-              <GsSelect v-model="birthMonthStr" :options="birthMonthSelectOpts" placeholder="选择月份" />
-            </div>
+          <div class="field">
+            <label class="field__label">出生年份</label>
+            <GsSelect v-model="birthYearStr" :options="birthYearSelectOpts" placeholder="选择年份" />
+          </div>
+          <div class="field">
+            <label class="field__label">出生月份</label>
+            <GsSelect v-model="birthMonthStr" :options="birthMonthSelectOpts" placeholder="选择月份" />
           </div>
         </div>
       </section>
@@ -329,10 +330,6 @@ onUnmounted(() => { observer?.disconnect() })
           <div class="field">
             <label class="field__label">期望城市</label>
             <input v-model="desired.city" class="input" placeholder="例：北京、上海" />
-          </div>
-          <div class="field">
-            <label class="field__label">到岗时间</label>
-            <GsMonthPicker v-model="desired.available" placeholder="选择到岗月份" :clearable="true" />
           </div>
         </div>
       </section>
@@ -568,23 +565,34 @@ onUnmounted(() => { observer?.disconnect() })
 }
 .field--full { grid-column: 1 / -1; }
 
-/* ── Birth date ── */
-.birth-date-row {
+/* ── Gender button group ── */
+.gender-btns {
   display: flex;
-  gap: var(--space-3);
+  height: 42px;
+  border: 1px solid var(--gs-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
-.birth-date-row .select-wrap { flex: 1; }
+.gender-btn {
+  flex: 1;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--gs-text-2);
+  background: none;
+  border: none;
+  border-right: 1px solid var(--gs-border);
+  cursor: pointer;
+  transition: background var(--duration-fast), color var(--duration-fast);
+}
+.gender-btn:last-child { border-right: none; }
+.gender-btn--active { background: var(--gs-primary-tint); color: var(--gs-primary); font-weight: 600; }
+.gender-btn:hover:not(.gender-btn--active) { background: var(--gs-surface-2); }
 
 /* ── Fields ── */
 .field { display: flex; flex-direction: column; gap: var(--space-2); }
 .field__label { font-size: var(--text-sm); font-weight: 500; color: var(--gs-text-2); }
 .textarea { height: 100px; resize: vertical; padding-block: var(--space-3); }
 .textarea--tall { height: 140px; }
-
-/* ── Radio ── */
-.radio-row { display: flex; gap: var(--space-5); align-items: center; height: 42px; }
-.radio-label { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; font-size: var(--text-sm); color: var(--gs-text-2); }
-.radio-input { accent-color: var(--gs-primary); width: 15px; height: 15px; cursor: pointer; }
 
 /* ── Salary ── */
 .salary-range { display: flex; align-items: center; gap: var(--space-2); }

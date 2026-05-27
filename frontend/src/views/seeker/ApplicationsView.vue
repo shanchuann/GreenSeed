@@ -70,8 +70,9 @@ function salary(a: Application) {
 }
 
 function relTime(iso: string) {
-  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
-  return d === 0 ? '今天' : d === 1 ? '昨天' : `${d}天前`
+  const ts = /[Z+]/.test(iso) ? iso : iso + 'Z'
+  const d = Math.floor((Date.now() - new Date(ts).getTime()) / 86400000)
+  return d <= 0 ? '今天' : d === 1 ? '昨天' : `${d}天前`
 }
 </script>
 

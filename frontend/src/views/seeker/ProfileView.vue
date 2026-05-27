@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, reactive } from 'vue'
 import { Check, Upload, FileText, ExternalLink, Camera } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api'
@@ -7,6 +7,24 @@ import ResumeEditor from '@/components/resume/ResumeEditor.vue'
 
 const auth = useAuthStore()
 const activeTab = ref<'online-resume' | 'resume'>('online-resume')
+
+// ── Recruiter profile form ────────────────────────────────────────
+const recruiterForm    = reactive({ name: '', phone: '' })
+const recruiterSaving  = ref(false)
+const recruiterSaved   = ref(false)
+
+async function saveRecruiterProfile() {
+  recruiterSaving.value = true
+  recruiterSaved.value  = false
+  try {
+    const res = await api.patch('/auth/me', { name: recruiterForm.name, phone: recruiterForm.phone })
+    auth.user = res.data
+    recruiterSaved.value = true
+    setTimeout(() => { recruiterSaved.value = false }, 2200)
+  } finally {
+    recruiterSaving.value = false
+  }
+}
 
 // ── Avatar ────────────────────────────────────────────────────────
 const avatarUploading = ref(false)
@@ -41,7 +59,11 @@ const saving      = ref(false)
 const saved       = ref(false)
 
 watch(() => auth.user, u => {
-  if (u) resumeUrl.value = (u as any).resume_url ?? ''
+  if (u) {
+    resumeUrl.value      = (u as any).resume_url ?? ''
+    recruiterForm.name   = u.name ?? ''
+    recruiterForm.phone  = (u as any).phone ?? ''
+  }
 }, { immediate: true })
 
 function onFileChange(e: Event) {
@@ -89,7 +111,6 @@ async function saveResumeUrl() {
 
       <!-- ── Profile hero ───────────────────────────────────────── -->
       <div class="profile-hero fade-up">
-        <div class="profile-hero__banner"></div>
         <div class="profile-hero__body">
           <div class="profile-avatar-wrap">
             <div class="profile-avatar" :class="{ 'profile-avatar--uploading': avatarUploading }">
@@ -111,76 +132,97 @@ async function saveResumeUrl() {
         </div>
       </div>
 
-      <!-- ── Tab nav ───────────────────────────────────────────── -->
-      <nav class="tab-nav fade-up" role="tablist">
-        <button
-          v-for="tab in [
-            { key: 'online-resume', label: '在线简历' },
-            { key: 'resume',        label: '我的简历' },
-          ]"
-          :key="tab.key"
-          role="tab"
-          :aria-selected="activeTab === tab.key"
-          class="tab-nav__item"
-          :class="{ 'tab-nav__item--active': activeTab === tab.key }"
-          @click="activeTab = (tab.key as any)"
-        >{{ tab.label }}</button>
-      </nav>
+      <!-- ── Seeker: tabs ─────────────────────────────────────────── -->
+      <template v-if="auth.isSeeker">
+        <nav class="tab-nav fade-up" role="tablist">
+          <button
+            v-for="tab in [
+              { key: 'online-resume', label: '在线简历' },
+              { key: 'resume',        label: '我的简历' },
+            ]"
+            :key="tab.key"
+            role="tab"
+            :aria-selected="activeTab === tab.key"
+            class="tab-nav__item"
+            :class="{ 'tab-nav__item--active': activeTab === tab.key }"
+            @click="activeTab = (tab.key as any)"
+          >{{ tab.label }}</button>
+        </nav>
 
-      <!-- ── 在线简历 ───────────────────────────────────────────── -->
-      <ResumeEditor v-if="activeTab === 'online-resume'" />
+        <ResumeEditor v-if="activeTab === 'online-resume'" />
 
-      <!-- ── 我的简历 ───────────────────────────────────────────── -->
-      <div v-else-if="activeTab === 'resume'" class="resume-tab-content fade-up">
-        <div class="profile-card">
-          <div v-if="resumeUrl" class="resume-current">
-            <FileText :size="20" color="var(--gs-primary)" />
-            <span class="resume-current__name">当前简历</span>
-            <a :href="resumeUrl" target="_blank" rel="noopener" class="btn btn--ghost btn--sm">
-              <ExternalLink :size="13" style="margin-right:3px" />查看
-            </a>
+        <div v-else class="resume-tab-content fade-up">
+          <div class="profile-card">
+            <div v-if="resumeUrl" class="resume-current">
+              <FileText :size="20" color="var(--gs-primary)" />
+              <span class="resume-current__name">当前简历</span>
+              <a :href="resumeUrl" target="_blank" rel="noopener" class="btn btn--ghost btn--sm">
+                <ExternalLink :size="13" style="margin-right:3px" />查看
+              </a>
+            </div>
+            <div v-else class="resume-empty">
+              <FileText :size="40" color="var(--gs-text-3)" />
+              <p>尚未上传简历</p>
+            </div>
+
+            <hr class="divider" style="margin-block:var(--space-6)" />
+
+            <div class="field">
+              <label class="field__label">上传附件简历</label>
+              <p class="field__hint">支持 PDF、DOC、DOCX 格式，建议 5MB 以内</p>
+              <label class="upload-zone">
+                <Upload :size="22" color="var(--gs-primary)" />
+                <span v-if="resumeFile">{{ resumeFile.name }}</span>
+                <span v-else>点击选择文件</span>
+                <input type="file" accept=".pdf,.doc,.docx" style="display:none" @change="onFileChange" />
+              </label>
+              <p v-if="uploadError" class="field__error">{{ uploadError }}</p>
+              <button
+                v-if="resumeFile"
+                type="button"
+                class="btn btn--primary"
+                style="margin-top:var(--space-3)"
+                :disabled="uploading"
+                @click="uploadResume"
+              >{{ uploading ? '上传中…' : '确认上传' }}</button>
+            </div>
+
+            <hr class="divider" style="margin-block:var(--space-6)" />
+
+            <div class="field">
+              <label class="field__label">或填写在线简历链接</label>
+              <p class="field__hint">可粘贴 Google Drive、OneDrive、超简历等平台的分享链接</p>
+              <input v-model="resumeUrl" class="input" placeholder="https://…" />
+            </div>
+
+            <div class="form-actions">
+              <button class="btn btn--primary" :disabled="saving" @click="saveResumeUrl">
+                <Check v-if="saved" :size="16" style="margin-right:4px" />
+                {{ saving ? '保存中…' : saved ? '已保存 ✓' : '保存链接' }}
+              </button>
+            </div>
           </div>
-          <div v-else class="resume-empty">
-            <FileText :size="40" color="var(--gs-text-3)" />
-            <p>尚未上传简历</p>
-          </div>
+        </div>
+      </template>
 
-          <hr class="divider" style="margin-block:var(--space-6)" />
-
+      <!-- ── Recruiter / Admin: simple info form ───────────────────── -->
+      <div v-else class="profile-card fade-up">
+        <h2 class="profile-section-title">基本资料</h2>
+        <div class="recruiter-form-grid">
           <div class="field">
-            <label class="field__label">上传附件简历</label>
-            <p class="field__hint">支持 PDF、DOC、DOCX 格式，建议 5MB 以内</p>
-            <label class="upload-zone">
-              <Upload :size="22" color="var(--gs-primary)" />
-              <span v-if="resumeFile">{{ resumeFile.name }}</span>
-              <span v-else>点击选择文件</span>
-              <input type="file" accept=".pdf,.doc,.docx" style="display:none" @change="onFileChange" />
-            </label>
-            <p v-if="uploadError" class="field__error">{{ uploadError }}</p>
-            <button
-              v-if="resumeFile"
-              type="button"
-              class="btn btn--primary"
-              style="margin-top:var(--space-3)"
-              :disabled="uploading"
-              @click="uploadResume"
-            >{{ uploading ? '上传中…' : '确认上传' }}</button>
+            <label class="field__label">姓名</label>
+            <input v-model="recruiterForm.name" class="input" placeholder="真实姓名" />
           </div>
-
-          <hr class="divider" style="margin-block:var(--space-6)" />
-
           <div class="field">
-            <label class="field__label">或填写在线简历链接</label>
-            <p class="field__hint">可粘贴 Google Drive、OneDrive、超简历等平台的分享链接</p>
-            <input v-model="resumeUrl" class="input" placeholder="https://…" />
+            <label class="field__label">手机号</label>
+            <input v-model="recruiterForm.phone" class="input" type="tel" placeholder="138..." />
           </div>
-
-          <div class="form-actions">
-            <button class="btn btn--primary" :disabled="saving" @click="saveResumeUrl">
-              <Check v-if="saved" :size="16" style="margin-right:4px" />
-              {{ saving ? '保存中…' : saved ? '已保存 ✓' : '保存链接' }}
-            </button>
-          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn--primary" :disabled="recruiterSaving" @click="saveRecruiterProfile">
+            <Check v-if="recruiterSaved" :size="16" style="margin-right:4px" />
+            {{ recruiterSaving ? '保存中…' : recruiterSaved ? '已保存 ✓' : '保存资料' }}
+          </button>
         </div>
       </div>
 
@@ -200,16 +242,11 @@ async function saveResumeUrl() {
   margin-bottom: var(--space-5);
   box-shadow: var(--shadow-sm);
 }
-.profile-hero__banner {
-  height: 80px;
-  background: var(--gs-primary);
-}
 .profile-hero__body {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: var(--space-5);
-  padding: 0 var(--space-8) var(--space-6) var(--space-8);
-  margin-top: -44px;
+  padding: var(--space-6) var(--space-8);
 }
 
 .profile-avatar-wrap { position: relative; flex-shrink: 0; }
@@ -311,5 +348,9 @@ async function saveResumeUrl() {
 }
 .upload-zone:hover { border-color: var(--gs-primary); background: var(--gs-primary-tint); }
 
-.form-actions { display: flex; justify-content: flex-end; padding-top: var(--space-2); }
+.form-actions { display: flex; justify-content: flex-end; align-items: center; padding-top: var(--space-2); }
+
+.profile-section-title { font-family: var(--font-display); font-size: var(--text-lg); font-weight: 700; color: var(--gs-text); margin-bottom: var(--space-5); }
+.recruiter-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-6); }
+@media (max-width: 640px) { .recruiter-form-grid { grid-template-columns: 1fr; } }
 </style>

@@ -120,7 +120,7 @@ router.beforeEach((to) => {
   if (to.meta.guestOnly && auth.isLoggedIn) {
     return { name: 'home' }
   }
-  if (to.meta.role && auth.user?.role !== to.meta.role) {
+  if (to.meta.role && auth.user?.role !== to.meta.role && auth.user?.role !== 'admin') {
     return { name: 'home' }
   }
 })
