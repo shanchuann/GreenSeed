@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, reactive, watch, computed, onMounted, onUnmounted } from 'vue'
-import { Plus, Trash2, Check, ChevronDown } from 'lucide-vue-next'
+import { Plus, Trash2, Check } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api'
 import GsMonthPicker from '@/components/ui/GsMonthPicker.vue'
+import GsSelect, { type SelectOption } from '@/components/ui/GsSelect.vue'
 
 const auth   = useAuthStore()
 const saving = ref<string | null>(null)
@@ -158,6 +159,22 @@ const birthYearOpts = computed(() => {
 })
 const birthMonthOpts = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
+const birthYearSelectOpts = computed<SelectOption[]>(() =>
+  birthYearOpts.value.map(y => ({ value: String(y), label: `${y} 年` }))
+)
+const birthMonthSelectOpts: SelectOption[] = birthMonthOpts.map(m => ({
+  value: String(m), label: `${m} 月`,
+}))
+
+const birthYearStr = computed({
+  get: () => personal.birth_year != null ? String(personal.birth_year) : '',
+  set: (v: string) => { personal.birth_year = v ? Number(v) : null },
+})
+const birthMonthStr = computed({
+  get: () => personal.birth_month != null ? String(personal.birth_month) : '',
+  set: (v: string) => { personal.birth_month = v ? Number(v) : null },
+})
+
 // ── Sidebar nav ───────────────────────────────────────────────────
 const sections = [
   { id: 'personal',  label: '个人信息' },
@@ -244,12 +261,7 @@ onUnmounted(() => { observer?.disconnect() })
           </div>
           <div class="field">
             <label class="field__label">求职状态</label>
-            <div class="select-wrap">
-              <select v-model="personal.job_status" class="input">
-                <option v-for="o in jobStatusOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
-              </select>
-              <ChevronDown :size="14" class="select-icon" />
-            </div>
+            <GsSelect v-model="personal.job_status" :options="jobStatusOptions" placeholder="选择状态" />
           </div>
           <div class="field">
             <label class="field__label">性别</label>
@@ -263,20 +275,8 @@ onUnmounted(() => { observer?.disconnect() })
           <div class="field field--full">
             <label class="field__label">出生日期</label>
             <div class="birth-date-row">
-              <div class="select-wrap">
-                <select v-model.number="personal.birth_year" class="input">
-                  <option value="" disabled>选择年份</option>
-                  <option v-for="y in birthYearOpts" :key="y" :value="y">{{ y }} 年</option>
-                </select>
-                <ChevronDown :size="14" class="select-icon" />
-              </div>
-              <div class="select-wrap">
-                <select v-model.number="personal.birth_month" class="input">
-                  <option value="" disabled>选择月份</option>
-                  <option v-for="m in birthMonthOpts" :key="m" :value="m">{{ m }} 月</option>
-                </select>
-                <ChevronDown :size="14" class="select-icon" />
-              </div>
+              <GsSelect v-model="birthYearStr" :options="birthYearSelectOpts" placeholder="选择年份" />
+              <GsSelect v-model="birthMonthStr" :options="birthMonthSelectOpts" placeholder="选择月份" />
             </div>
           </div>
         </div>
@@ -580,14 +580,6 @@ onUnmounted(() => { observer?.disconnect() })
 .field__label { font-size: var(--text-sm); font-weight: 500; color: var(--gs-text-2); }
 .textarea { height: 100px; resize: vertical; padding-block: var(--space-3); }
 .textarea--tall { height: 140px; }
-
-/* ── Select ── */
-.select-wrap { position: relative; }
-.select-wrap select { appearance: none; padding-right: 32px; cursor: pointer; }
-.select-icon {
-  position: absolute; right: var(--space-3); top: 50%;
-  transform: translateY(-50%); pointer-events: none; color: var(--gs-text-3);
-}
 
 /* ── Radio ── */
 .radio-row { display: flex; gap: var(--space-5); align-items: center; height: 42px; }

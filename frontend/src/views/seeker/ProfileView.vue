@@ -202,7 +202,7 @@ async function saveResumeUrl() {
 }
 .profile-hero__banner {
   height: 80px;
-  background: linear-gradient(120deg, var(--gs-primary) 0%, oklch(62% 0.13 160) 100%);
+  background: var(--gs-primary);
 }
 .profile-hero__body {
   display: flex;
@@ -272,7 +272,7 @@ async function saveResumeUrl() {
 
 /* ── 我的简历 tab wrap ── */
 .resume-tab-content {
-  max-width: 680px;
+  width: 100%;
 }
 
 /* ── Card ── */
