@@ -530,7 +530,10 @@ onUnmounted(() => { observer?.disconnect() })
 .resume-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-6);
+}
+.resume-content section {
+  scroll-margin-top: 100px;
 }
 
 /* ── Section card ── */
@@ -538,14 +541,15 @@ onUnmounted(() => { observer?.disconnect() })
   background: var(--gs-surface);
   border: 1px solid var(--gs-border);
   border-radius: var(--radius-xl);
-  padding: var(--space-7);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-sm);
 }
 .rs-card__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--space-6);
-  padding-bottom: var(--space-4);
+  padding-bottom: var(--space-5);
   border-bottom: 1px solid var(--gs-border);
 }
 .rs-card__title {
@@ -609,12 +613,12 @@ onUnmounted(() => { observer?.disconnect() })
   margin-bottom: var(--space-4);
 }
 .exp-entry {
-  display: flex; flex-direction: column; gap: var(--space-4);
-  padding: var(--space-5);
+  display: flex; flex-direction: column; gap: var(--space-5);
+  padding: var(--space-6);
   background: var(--gs-bg);
   border: 1px solid var(--gs-border);
   border-radius: var(--radius-lg);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 .exp-entry__header { display: flex; align-items: center; justify-content: space-between; }
 .exp-entry__num { font-size: var(--text-sm); font-weight: 600; color: var(--gs-text-2); }
