@@ -1,6 +1,8 @@
+import os
+import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from supabase import Client
 
 from api.deps import CurrentUser, get_supabase, get_supabase_admin
@@ -93,12 +95,42 @@ async def update_me(
     user: CurrentUser,
     admin_db: Annotated[Client, Depends(get_supabase_admin)],
 ):
-    allowed = {"name", "phone", "avatar_url", "bio", "skills", "education"}
+    allowed = {
+        "name", "phone", "avatar_url", "bio", "skills", "education",
+        "desired_position", "desired_salary_min", "desired_salary_max",
+        "desired_city", "available_date", "work_experience", "resume_url",
+    }
     patch = {k: v for k, v in body.items() if k in allowed}
     if not patch:
         raise HTTPException(400, "无可更新字段")
 
     res = admin_db.table("profiles").update(patch).eq("id", user["id"]).execute()
+    return UserOut(**res.data[0])
+
+
+@router.post("/me/resume", response_model=UserOut)
+async def upload_resume(
+    file: Annotated[UploadFile, File(description="PDF 或 Word 简历文件")],
+    user: CurrentUser,
+    admin_db: Annotated[Client, Depends(get_supabase_admin)],
+):
+    ext = (file.filename or "resume").rsplit(".", 1)[-1].lower()
+    if ext not in {"pdf", "doc", "docx"}:
+        raise HTTPException(400, "仅支持 PDF / DOC / DOCX 格式")
+
+    content = await file.read()
+    path = f"{user['id']}/{uuid.uuid4()}.{ext}"
+
+    try:
+        admin_db.storage.from_("resumes").upload(
+            path, content,
+            file_options={"content-type": file.content_type or "application/octet-stream"},
+        )
+    except Exception as exc:
+        raise HTTPException(500, f"文件上传失败：{exc}") from exc
+
+    public_url = admin_db.storage.from_("resumes").get_public_url(path)
+    res = admin_db.table("profiles").update({"resume_url": public_url}).eq("id", user["id"]).execute()
     return UserOut(**res.data[0])
 
 

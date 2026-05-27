@@ -35,9 +35,9 @@ const categoryDefs = [
 const categories = ref(categoryDefs.map(c => ({ ...c, count: null as number | null })))
 
 const stats = ref([
-  { value: '—', unit: '家', label: '入驻企业' },
-  { value: '—', unit: '个', label: '在招职位' },
-  { value: '—', unit: '+', label: '注册求职者' },
+  { value: '—', unit: '家', label: '入驻企业', _raw: 0 },
+  { value: '—', unit: '个', label: '在招职位', _raw: 0 },
+  { value: '—', unit: '+', label: '注册求职者', _raw: 0 },
 ])
 
 const featuredJobs    = ref<Job[]>([])
@@ -58,9 +58,9 @@ onMounted(async () => {
 
   if (statsRes.status === 'fulfilled') {
     const s = statsRes.value.data
-    stats.value[0].value = s.companies
-    stats.value[1].value = s.open_jobs
-    stats.value[2].value = s.seekers
+    stats.value[0]._raw = s.companies  ?? 0
+    stats.value[1]._raw = s.open_jobs  ?? 0
+    stats.value[2]._raw = s.seekers    ?? 0
     const catMap: Record<string, number> = s.jobs_by_category ?? {}
     categories.value = categories.value.map(c => ({
       ...c,
@@ -72,13 +72,34 @@ onMounted(async () => {
 
   gsapCtx = gsap.context(() => {
     // ── Hero 入场 ──────────────────────────────────────────
-    gsap.timeline({ defaults: { ease: 'power3.out' } })
+    const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } })
+    heroTl
       .from('.hero__brand-text', { y: 50, opacity: 0, duration: 0.85 })
       .from('.hero__tagline',    { y: 28, opacity: 0, duration: 0.65 }, '-=0.55')
       .from('.hero__desc',       { y: 24, opacity: 0, duration: 0.6  }, '-=0.45')
       .from('.hero__search',     { y: 24, opacity: 0, duration: 0.55 }, '-=0.4')
       .from('.hero__hot-tag',    { y: 14, opacity: 0, duration: 0.35, stagger: 0.07 }, '-=0.3')
       .from('.hero__stats',      { x: 50, opacity: 0, duration: 0.75 }, '-=0.7')
+      .from('.hero__deco-line',  { scaleY: 0, transformOrigin: 'top center', opacity: 0, duration: 1.2, stagger: 0.15, ease: 'power2.inOut' }, '-=0.6')
+
+    // ── 统计数字滚动计数 ───────────────────────────────────
+    heroTl.call(() => {
+      stats.value.forEach((s, i) => {
+        const target = { n: 0 }
+        gsap.to(target, {
+          n: s._raw,
+          duration: 1.4,
+          delay: i * 0.12,
+          ease: 'power2.out',
+          onUpdate() {
+            stats.value[i].value = Math.round(target.n).toLocaleString()
+          },
+          onComplete() {
+            stats.value[i].value = s._raw.toLocaleString()
+          },
+        })
+      })
+    }, undefined, '-=0.5')
 
     // ── 分类卡片滚动入场 ───────────────────────────────────
     gsap.from('.category-card', {
@@ -502,6 +523,7 @@ onUnmounted(() => {
   align-items: flex-start;
   gap: var(--space-2);
   padding: var(--space-5);
+  min-height: 108px;
   background: var(--gs-bg);
   border: 1px solid var(--gs-border);
   border-radius: var(--radius-lg);
@@ -524,6 +546,7 @@ onUnmounted(() => {
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--gs-text);
+  white-space: nowrap;
 }
 .category-card__count {
   font-size: var(--text-xs);

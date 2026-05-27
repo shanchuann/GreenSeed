@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 
 export interface Job {
   id: string
@@ -17,6 +18,8 @@ export interface Job {
   description?: string
   requirements?: string
   category?: string
+  source_platform?: string
+  source_url?: string
 }
 
 const props = withDefaults(
@@ -55,10 +58,33 @@ function relativeTime(iso: string) {
 }
 
 const initials = computed(() => companyName.value.slice(0, 2))
+
+const platformLabel: Record<string, string> = {
+  local:      '',
+  boss:       'BOSS直聘',
+  zhilian:    '智联招聘',
+  lagou:      '拉勾',
+  liepin:     '猎聘',
+  '51job':    '前程无忧',
+}
+
+const isExternal = computed(() =>
+  !!props.job.source_platform && props.job.source_platform !== 'local'
+)
+const platformName = computed(() =>
+  platformLabel[props.job.source_platform ?? 'local'] ?? props.job.source_platform ?? ''
+)
 </script>
 
 <template>
-  <RouterLink :to="`/jobs/${job.id}`" class="job-card" :class="`job-card--${variant}`">
+  <component
+    :is="isExternal ? 'a' : RouterLink"
+    v-bind="isExternal
+      ? { href: job.source_url, target: '_blank', rel: 'noopener noreferrer' }
+      : { to: `/jobs/${job.id}` }"
+    class="job-card"
+    :class="`job-card--${variant}`"
+  >
     <div class="job-card__logo">
       <img v-if="companyLogo" :src="companyLogo" :alt="companyName" />
       <span v-else class="job-card__initials">{{ initials }}</span>
@@ -76,16 +102,17 @@ const initials = computed(() => companyName.value.slice(0, 2))
         <span class="job-card__dot" aria-hidden="true">·</span>
         <span>{{ relativeTime(job.created_at) }}</span>
       </div>
-      <div v-if="job.tags?.length" class="job-card__tags">
+      <div class="job-card__tags">
         <span class="tag tag--muted">{{ typeLabel[job.job_type] }}</span>
-        <span v-for="tag in job.tags.slice(0, 3)" :key="tag" class="tag tag--green">{{ tag }}</span>
+        <span v-if="isExternal" class="tag tag--platform">{{ platformName }}</span>
+        <span v-for="tag in (job.tags ?? []).slice(0, 3)" :key="tag" class="tag tag--green">{{ tag }}</span>
       </div>
     </div>
 
     <svg v-if="variant === 'list'" class="job-card__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M5 12h14M12 5l7 7-7 7"/>
     </svg>
-  </RouterLink>
+  </component>
 </template>
 
 <style scoped>
@@ -129,7 +156,13 @@ const initials = computed(() => companyName.value.slice(0, 2))
 .job-card__salary { font-size: var(--text-base); font-weight: 600; color: var(--gs-primary); white-space: nowrap; flex-shrink: 0; }
 .job-card__meta { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; font-size: var(--text-sm); color: var(--gs-text-2); margin-bottom: var(--space-3); }
 .job-card__dot { color: var(--gs-border-strong); }
-.job-card__tags { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.job-card__tags { display: flex; flex-wrap: wrap; gap: var(--space-2); min-height: 22px; }
+
+.tag--platform {
+  background: oklch(96% 0.04 255);
+  color: oklch(45% 0.14 255);
+  border: 1px solid oklch(88% 0.06 255);
+}
 .job-card__arrow { flex-shrink: 0; color: var(--gs-text-3); margin-top: var(--space-2); transition: transform var(--duration-fast) var(--ease-out), color var(--duration-fast); }
 .job-card:hover .job-card__arrow { color: var(--gs-primary); transform: translateX(3px); }
 </style>

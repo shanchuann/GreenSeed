@@ -24,6 +24,14 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class WorkExperience(BaseModel):
+    company: str
+    position: str
+    start_date: str
+    end_date: Optional[str] = None
+    description: Optional[str] = None
+
+
 class UserOut(BaseModel):
     id: str
     email: str
@@ -34,6 +42,13 @@ class UserOut(BaseModel):
     bio: Optional[str] = None
     skills: Optional[list[str]] = None
     education: Optional[str] = None
+    desired_position: Optional[str] = None
+    desired_salary_min: Optional[int] = None
+    desired_salary_max: Optional[int] = None
+    desired_city: Optional[str] = None
+    available_date: Optional[str] = None
+    work_experience: Optional[list[dict]] = None
+    resume_url: Optional[str] = None
     created_at: datetime
 
 
@@ -117,6 +132,8 @@ class JobOut(BaseModel):
     category: Optional[str] = None
     tags: Optional[list[str]] = None
     status: str
+    source_platform: str = "local"
+    source_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     company: Optional[CompanyOut] = None

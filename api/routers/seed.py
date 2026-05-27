@@ -219,8 +219,72 @@ async def seed(
         },
     ]
 
+    # ── 外部来源职位（模拟来自其他招聘平台） ──────────────────────
+    external_jobs_data = [
+        {
+            "company_id":      c1,
+            "title":           "数据分析师（应届）",
+            "description":     "负责公司业务数据的采集、清洗与分析，输出数据报告，支持业务决策。配合产品与运营团队完成专项数据分析项目。",
+            "requirements":    "本科及以上，统计/计算机/数学等相关专业；熟悉 Python 或 SQL；有数据可视化经验优先。",
+            "salary_min":      12000,
+            "salary_max":      20000,
+            "job_type":        "full",
+            "location":        "北京",
+            "category":        "互联网·软件",
+            "tags":            ["Python", "SQL", "数据分析", "Tableau"],
+            "status":          "open",
+            "source_platform": "boss",
+            "source_url":      "https://www.zhipin.com/",
+        },
+        {
+            "company_id":      c1,
+            "title":           "Java 后端开发（校招）",
+            "description":     "参与公司核心系统研发，负责微服务模块设计与开发，优化接口性能，推动系统稳定性提升。",
+            "requirements":    "本科及以上，计算机相关专业；熟悉 Java/Spring Boot；了解 Redis、MySQL；有实习经验优先。",
+            "salary_min":      16000,
+            "salary_max":      28000,
+            "job_type":        "full",
+            "location":        "北京",
+            "category":        "互联网·软件",
+            "tags":            ["Java", "Spring Boot", "MySQL", "Redis"],
+            "status":          "open",
+            "source_platform": "zhilian",
+            "source_url":      "https://www.zhaopin.com/",
+        },
+        {
+            "company_id":      c2,
+            "title":           "新媒体运营实习生",
+            "description":     "协助运营抖音、B站等短视频账号，参与脚本策划、拍摄配合及数据复盘，探索内容增长策略。",
+            "requirements":    "本科在读，传播/中文/市场相关专业；对短视频内容有热情；每周可实习 4 天以上。",
+            "salary_min":      3500,
+            "salary_max":      5000,
+            "job_type":        "intern",
+            "location":        "上海",
+            "category":        "市场·运营",
+            "tags":            ["抖音运营", "短视频", "内容策划"],
+            "status":          "open",
+            "source_platform": "lagou",
+            "source_url":      "https://www.lagou.com/",
+        },
+        {
+            "company_id":      c2,
+            "title":           "商务拓展专员",
+            "description":     "负责开拓新客户，维护客户关系，协助完成商务谈判，推动公司品牌合作业务增长。",
+            "requirements":    "本科及以上；沟通表达能力强，执行力佳；有销售或商务相关实习经历优先。",
+            "salary_min":      8000,
+            "salary_max":      15000,
+            "job_type":        "full",
+            "location":        "上海",
+            "category":        "咨询·管理",
+            "tags":            ["商务拓展", "客户关系", "BD"],
+            "status":          "open",
+            "source_platform": "51job",
+            "source_url":      "https://www.51job.com/",
+        },
+    ]
+
     job_ids: list[str] = []
-    for j in jobs_data:
+    for j in jobs_data + external_jobs_data:
         existing = (
             db.table("jobs")
             .select("id")
@@ -233,7 +297,8 @@ async def seed(
         else:
             res = db.table("jobs").insert(j).execute()
             jid = res.data[0]["id"]
-        job_ids.append(jid)
+        if j in jobs_data:
+            job_ids.append(jid)
         result["jobs"].append(j["title"])
 
     # ── 4. 申请 ──────────────────────────────────────────────────
