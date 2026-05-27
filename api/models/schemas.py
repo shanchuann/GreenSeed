@@ -32,6 +32,16 @@ class WorkExperience(BaseModel):
     description: Optional[str] = None
 
 
+class ProjectExperience(BaseModel):
+    project_name: str
+    project_link: Optional[str] = None
+    start_date: str
+    end_date: Optional[str] = None
+    tech_stack: Optional[list[str]] = None
+    description: Optional[str] = None
+    results: Optional[str] = None
+
+
 class UserOut(BaseModel):
     id: str
     email: str
@@ -42,18 +52,25 @@ class UserOut(BaseModel):
     bio: Optional[str] = None
     skills: Optional[list[str]] = None
     education: Optional[str] = None
-    desired_position: Optional[str] = None
+    desired_position: Optional[list[str]] = None
     desired_salary_min: Optional[int] = None
     desired_salary_max: Optional[int] = None
     desired_city: Optional[str] = None
     available_date: Optional[str] = None
     work_experience: Optional[list[dict]] = None
+    project_experience: Optional[list[dict]] = None
     resume_url: Optional[str] = None
+    gender: Optional[str] = None
+    job_status: Optional[str] = None
+    birth_year: Optional[int] = None
+    birth_month: Optional[int] = None
+    wechat: Optional[str] = None
     created_at: datetime
 
 
 class AuthResponse(BaseModel):
     access_token: str
+    refresh_token: str = ""
     token_type: str = "bearer"
     user: UserOut
 

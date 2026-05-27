@@ -1,4 +1,5 @@
 import os
+import time
 import uuid
 from typing import Annotated
 
@@ -18,6 +19,10 @@ class ForgotPasswordRequest(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     password: str
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
 
 router = APIRouter()
 
@@ -64,6 +69,7 @@ async def register(
 
     return AuthResponse(
         access_token=auth_res.session.access_token,
+        refresh_token=auth_res.session.refresh_token or "",
         user=UserOut(**profile),
     )
 
@@ -91,6 +97,7 @@ async def login(
 
     return AuthResponse(
         access_token=auth_res.session.access_token,
+        refresh_token=auth_res.session.refresh_token or "",
         user=UserOut(**profile_res.data),
     )
 
@@ -109,7 +116,8 @@ async def update_me(
     allowed = {
         "name", "phone", "avatar_url", "bio", "skills", "education",
         "desired_position", "desired_salary_min", "desired_salary_max",
-        "desired_city", "available_date", "work_experience", "resume_url",
+        "desired_city", "available_date", "work_experience", "project_experience",
+        "resume_url", "gender", "job_status", "birth_year", "birth_month", "wechat",
     }
     patch = {k: v for k, v in body.items() if k in allowed}
     if not patch:
@@ -142,6 +150,70 @@ async def upload_resume(
 
     public_url = admin_db.storage.from_("resumes").get_public_url(path)
     res = admin_db.table("profiles").update({"resume_url": public_url}).eq("id", user["id"]).execute()
+    return UserOut(**res.data[0])
+
+
+@router.post("/refresh")
+async def refresh_token(
+    body: RefreshRequest,
+    db: Annotated[Client, Depends(get_supabase)],
+):
+    try:
+        res = db.auth.refresh_session(body.refresh_token)
+    except Exception as exc:
+        raise HTTPException(401, "刷新失败，请重新登录") from exc
+    if not res or not res.session:
+        raise HTTPException(401, "刷新失败，请重新登录")
+    return {
+        "access_token": res.session.access_token,
+        "refresh_token": res.session.refresh_token or "",
+    }
+
+
+@router.post("/me/avatar", response_model=UserOut)
+async def upload_avatar(
+    file: Annotated[UploadFile, File()],
+    user: CurrentUser,
+    admin_db: Annotated[Client, Depends(get_supabase_admin)],
+):
+    ext = (file.filename or "avatar").rsplit(".", 1)[-1].lower()
+    if ext not in {"jpg", "jpeg", "png", "webp", "gif"}:
+        raise HTTPException(400, "仅支持 JPG / PNG / WebP / GIF")
+    content = await file.read()
+    if len(content) > 5 * 1024 * 1024:
+        raise HTTPException(400, "图片大小不超过 5MB")
+    path = f"{user['id']}/avatar.{ext}"
+    try:
+        try:
+            admin_db.storage.from_("avatars").remove([path])
+        except Exception:
+            pass
+        admin_db.storage.from_("avatars").upload(
+            path, content,
+            file_options={"content-type": file.content_type or "image/jpeg", "upsert": "true"},
+        )
+    except Exception as exc:
+        raise HTTPException(500, f"头像上传失败：{exc}") from exc
+    public_url = admin_db.storage.from_("avatars").get_public_url(path)
+    public_url = f"{public_url}?t={int(time.time())}"
+    res = admin_db.table("profiles").update({"avatar_url": public_url}).eq("id", user["id"]).execute()
+    return UserOut(**res.data[0])
+
+
+@router.patch("/me/extended", response_model=UserOut)
+async def update_me_extended(
+    body: dict,
+    user: CurrentUser,
+    admin_db: Annotated[Client, Depends(get_supabase_admin)],
+):
+    allowed = {
+        "gender", "job_status", "birth_year", "birth_month", "wechat",
+        "project_experience",
+    }
+    patch = {k: v for k, v in body.items() if k in allowed}
+    if not patch:
+        raise HTTPException(400, "无可更新字段")
+    res = admin_db.table("profiles").update(patch).eq("id", user["id"]).execute()
     return UserOut(**res.data[0])
 
 

@@ -105,6 +105,7 @@ onMounted(async () => {
     gsap.from('.category-card', {
       scrollTrigger: { trigger: '.categories', start: 'top 82%' },
       y: 36, opacity: 0, duration: 0.55, stagger: 0.04, ease: 'power2.out',
+      clearProps: 'transform,opacity',
     })
 
     // ── 最新职位 section 标题 ──────────────────────────────
@@ -514,6 +515,8 @@ onUnmounted(() => {
 .categories {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-auto-rows: 1fr;
+  align-items: stretch;
   gap: var(--space-3);
 }
 

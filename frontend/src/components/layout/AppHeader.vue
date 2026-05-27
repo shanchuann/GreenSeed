@@ -78,6 +78,7 @@ const userInitial = computed(() =>
                   <span class="dropdown__email">{{ auth.user?.email }}</span>
                 </div>
                 <RouterLink to="/profile"      class="dropdown__item">个人资料</RouterLink>
+                <RouterLink to="/resume"       class="dropdown__item" v-if="auth.isSeeker">在线简历</RouterLink>
                 <RouterLink to="/applications" class="dropdown__item" v-if="auth.isSeeker">我的申请</RouterLink>
                 <button class="dropdown__item dropdown__item--danger" @click="logout">退出登录</button>
               </div>

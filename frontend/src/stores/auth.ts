@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
+import api from '@/api'
 
 export interface WorkExperience {
   company: string
@@ -8,6 +9,16 @@ export interface WorkExperience {
   start_date: string
   end_date?: string
   description?: string
+}
+
+export interface ProjectExperience {
+  project_name: string
+  project_link?: string
+  start_date: string
+  end_date?: string
+  tech_stack?: string[]
+  description?: string
+  results?: string
 }
 
 export interface User {
@@ -20,18 +31,24 @@ export interface User {
   bio?: string
   skills?: string[]
   education?: string
-  desired_position?: string
+  desired_position?: string[]
   desired_salary_min?: number
   desired_salary_max?: number
   desired_city?: string
   available_date?: string
   work_experience?: WorkExperience[]
+  project_experience?: ProjectExperience[]
   resume_url?: string
+  gender?: string
+  job_status?: string
+  birth_year?: number
+  birth_month?: number
+  wechat?: string
   created_at?: string
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  const user = ref<User | null>(null)
+  const user  = ref<User | null>(null)
   const token = ref<string | null>(null)
 
   const isLoggedIn  = computed(() => !!token.value)
@@ -40,7 +57,6 @@ export const useAuthStore = defineStore('auth', () => {
   const isAdmin     = computed(() => user.value?.role === 'admin')
   const isRestored  = ref(false)
 
-  // 幂等：多次调用共享同一个 Promise，避免重复请求
   let _restorePromise: Promise<void> | null = null
 
   function restore(): Promise<void> {
@@ -52,16 +68,18 @@ export const useAuthStore = defineStore('auth', () => {
     }
     token.value = saved
     axios.defaults.headers.common['Authorization'] = `Bearer ${saved}`
-    // .finally 在 Promise resolve 前运行，保证 isRestored 先于 await 返回处被设置
     return (_restorePromise = fetchMe().finally(() => { isRestored.value = true }))
   }
 
   async function fetchMe() {
     try {
-      const res = await axios.get('/api/auth/me')
+      const res = await api.get('/auth/me')
       user.value = res.data
-    } catch {
-      logout()
+    } catch (err: any) {
+      if (err?.response?.status !== 401) {
+        logout()
+      }
+      // 401 handled by api interceptor (refresh → retry or redirect)
     }
   }
 
@@ -70,6 +88,9 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = res.data.access_token
     user.value  = res.data.user
     localStorage.setItem('gs-token', token.value!)
+    if (res.data.refresh_token) {
+      localStorage.setItem('gs-refresh-token', res.data.refresh_token)
+    }
     axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
   }
 
@@ -84,9 +105,11 @@ export const useAuthStore = defineStore('auth', () => {
     if (res.data.access_token) {
       token.value = res.data.access_token
       localStorage.setItem('gs-token', token.value!)
+      if (res.data.refresh_token) {
+        localStorage.setItem('gs-refresh-token', res.data.refresh_token)
+      }
       axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
     }
-    // empty token means email confirmation is required — caller should handle redirect
   }
 
   function logout() {
@@ -95,6 +118,7 @@ export const useAuthStore = defineStore('auth', () => {
     isRestored.value = false
     _restorePromise  = null
     localStorage.removeItem('gs-token')
+    localStorage.removeItem('gs-refresh-token')
     delete axios.defaults.headers.common['Authorization']
   }
 
