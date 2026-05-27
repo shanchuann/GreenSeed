@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { Check, Plus, Trash2, Upload, FileText, ExternalLink, Camera, Link } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 import api from '@/api'
 import GsMonthPicker from '@/components/ui/GsMonthPicker.vue'
+import ResumeEditor from '@/components/resume/ResumeEditor.vue'
 
 const auth = useAuthStore()
 const saving = ref(false)
 const saved  = ref(false)
-const activeTab = ref<'basic' | 'intention' | 'experience' | 'project' | 'resume'>('basic')
+const activeTab = ref<'basic' | 'intention' | 'experience' | 'project' | 'resume' | 'online-resume'>('basic')
 
 // ── Basic info ────────────────────────────────────────────────────
 const basic = reactive({
@@ -144,8 +145,7 @@ async function uploadResume() {
 }
 
 // ── Init ──────────────────────────────────────────────────────────
-onMounted(() => {
-  const u = auth.user as any
+function initForm(u: any) {
   if (!u) return
 
   basic.name      = u.name      ?? ''
@@ -155,7 +155,7 @@ onMounted(() => {
   basic.skills    = [...(u.skills ?? [])]
 
   const dp = u.desired_position
-  intention.desired_positions   = Array.isArray(dp) ? [...dp] : (dp ? [dp] : [])
+  intention.desired_positions  = Array.isArray(dp) ? [...dp] : (dp ? [dp] : [])
   intention.desired_salary_min = u.desired_salary_min ?? null
   intention.desired_salary_max = u.desired_salary_max ?? null
   intention.desired_city       = u.desired_city       ?? ''
@@ -168,7 +168,9 @@ onMounted(() => {
   }))
   techInputs.value  = projects.value.map(() => '')
   resumeUrl.value   = u.resume_url ?? ''
-})
+}
+
+watch(() => auth.user, initForm, { immediate: true })
 
 // ── Save ──────────────────────────────────────────────────────────
 const tabPayload = computed(() => {
@@ -234,11 +236,12 @@ function removeSkill(i: number) { basic.skills.splice(i, 1) }
       <nav class="tab-nav fade-up" role="tablist">
         <button
           v-for="tab in [
-            { key: 'basic',      label: '基本信息' },
-            { key: 'intention',  label: '求职意向' },
-            { key: 'experience', label: '工作经历' },
-            { key: 'project',    label: '项目经历' },
-            { key: 'resume',     label: '我的简历' },
+            { key: 'basic',         label: '基本信息' },
+            { key: 'intention',     label: '求职意向' },
+            { key: 'experience',    label: '工作经历' },
+            { key: 'project',       label: '项目经历' },
+            { key: 'resume',        label: '我的简历' },
+            { key: 'online-resume', label: '在线简历' },
           ]"
           :key="tab.key"
           role="tab"
@@ -248,6 +251,10 @@ function removeSkill(i: number) { basic.skills.splice(i, 1) }
           @click="activeTab = (tab.key as any)"
         >{{ tab.label }}</button>
       </nav>
+    </div>
+
+    <!-- Tab content — full-width for online-resume, narrow otherwise -->
+    <div class="container" :class="{ 'container--narrow': activeTab !== 'online-resume' }">
 
       <!-- ── Tab: 基本信息 ─────────────────────────────────────── -->
       <div v-if="activeTab === 'basic'" class="profile-card fade-up">
@@ -482,6 +489,9 @@ function removeSkill(i: number) { basic.skills.splice(i, 1) }
         </div>
       </div>
 
+      <!-- ── Tab: 在线简历 ─────────────────────────────────────── -->
+      <ResumeEditor v-else-if="activeTab === 'online-resume'" />
+
       <!-- ── Tab: 我的简历 ─────────────────────────────────────── -->
       <div v-else-if="activeTab === 'resume'" class="profile-card fade-up">
         <div v-if="resumeUrl" class="resume-current">
@@ -611,7 +621,10 @@ function removeSkill(i: number) { basic.skills.splice(i, 1) }
   margin-bottom: var(--space-5);
   border-bottom: 2px solid var(--gs-border);
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+.tab-nav::-webkit-scrollbar { display: none; }
 .tab-nav__item {
   padding: var(--space-3) var(--space-5);
   font-size: var(--text-sm);

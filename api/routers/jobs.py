@@ -70,7 +70,7 @@ async def list_jobs(
         query = query.or_(f"title.ilike.%{q}%,tags.cs.{{{q}}}")
 
     if sort_by == "salary":
-        query = query.order("salary_max", desc=True, nulls_last=True)
+        query = query.order("salary_max", desc=True, nullsfirst=False)
     else:
         query = query.order("created_at", desc=True)
 

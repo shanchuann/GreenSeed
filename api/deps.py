@@ -53,15 +53,27 @@ def _decode_token(token: str) -> dict:
 # ── Current-user dependency ───────────────────────────────────────
 
 def get_current_user(
-    creds: Annotated[HTTPAuthorizationCredentials, Depends(bearer)],
-    db: Annotated[Client, Depends(get_supabase_admin)],
+    creds:    Annotated[HTTPAuthorizationCredentials, Depends(bearer)],
+    anon_db:  Annotated[Client, Depends(get_supabase)],
+    admin_db: Annotated[Client, Depends(get_supabase_admin)],
 ) -> dict:
-    payload = _decode_token(creds.credentials)
-    user_id = payload.get("sub")
-    if not user_id:
-        raise HTTPException(status_code=401, detail="令牌中缺少用户标识")
-
-    res = db.table("profiles").select("*").eq("id", user_id).single().execute()
+    token = creds.credentials
+    try:
+        user_res = anon_db.auth.get_user(token)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效或已过期的令牌",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+    if not user_res or not user_res.user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效或已过期的令牌",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user_id = user_res.user.id
+    res = admin_db.table("profiles").select("*").eq("id", user_id).single().execute()
     if not res.data:
         raise HTTPException(status_code=401, detail="用户不存在")
     return res.data
