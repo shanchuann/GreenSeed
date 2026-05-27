@@ -2,12 +2,32 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 
+export interface WorkExperience {
+  company: string
+  position: string
+  start_date: string
+  end_date?: string
+  description?: string
+}
+
 export interface User {
   id: string
   email: string
   name: string
   role: 'seeker' | 'recruiter' | 'admin'
+  phone?: string
   avatar_url?: string
+  bio?: string
+  skills?: string[]
+  education?: string
+  desired_position?: string
+  desired_salary_min?: number
+  desired_salary_max?: number
+  desired_city?: string
+  available_date?: string
+  work_experience?: WorkExperience[]
+  resume_url?: string
+  created_at?: string
 }
 
 export const useAuthStore = defineStore('auth', () => {

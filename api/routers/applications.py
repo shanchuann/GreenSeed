@@ -64,6 +64,30 @@ async def my_applications(
     return res.data
 
 
+# ── 求职者：撤回申请 ──────────────────────────────────────────────
+
+@router.delete("/{app_id}", status_code=204)
+async def withdraw_application(
+    app_id: str,
+    user:   SeekerOnly,
+    db:     Annotated[Client, Depends(get_supabase_admin)],
+):
+    res = (
+        db.table("applications")
+        .select("id, seeker_id, status")
+        .eq("id", app_id)
+        .single()
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(404, "申请不存在")
+    if res.data["seeker_id"] != user["id"]:
+        raise HTTPException(403, "无权操作")
+    if res.data["status"] in ("accepted", "rejected"):
+        raise HTTPException(400, "已终态申请无法撤回")
+    db.table("applications").delete().eq("id", app_id).execute()
+
+
 # ── 招聘方：查看某职位的所有申请 ──────────────────────────────────
 
 @router.get("/job/{job_id}", response_model=list[ApplicationOut])

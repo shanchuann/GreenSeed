@@ -10,10 +10,11 @@ import { cityOptions } from '@/constants/cities'
 const route  = useRoute()
 const router = useRouter()
 
-const keyword  = ref((route.query.q    as string) ?? '')
-const city     = ref((route.query.city as string) ?? '')
-const jobType  = ref((route.query.type as string) ?? '')
-const sortBy   = ref((route.query.sort as string) ?? 'newest')
+const keyword  = ref((route.query.q        as string) ?? '')
+const city     = ref((route.query.city     as string) ?? '')
+const jobType  = ref((route.query.type     as string) ?? '')
+const category = ref((route.query.category as string) ?? '')
+const sortBy   = ref((route.query.sort     as string) ?? 'newest')
 const loading     = ref(false)
 const loadingMore = ref(false)
 const jobs        = ref<Job[]>([])
@@ -38,6 +39,7 @@ function buildParams(offset = 0) {
     q:        keyword.value  || undefined,
     city:     city.value     || undefined,
     job_type: jobType.value  || undefined,
+    category: category.value || undefined,
     sort_by:  sortBy.value,
     limit:    PAGE + 1,
     offset,
@@ -78,12 +80,13 @@ function scheduleSearch() {
 }
 
 watch(keyword, scheduleSearch)
-watch([city, jobType, sortBy], () => {
+watch([city, jobType, category, sortBy], () => {
   router.replace({
     query: {
-      ...(keyword.value  && { q:    keyword.value }),
-      ...(city.value     && { city: city.value }),
-      ...(jobType.value  && { type: jobType.value }),
+      ...(keyword.value  && { q:        keyword.value }),
+      ...(city.value     && { city:     city.value }),
+      ...(jobType.value  && { type:     jobType.value }),
+      ...(category.value && { category: category.value }),
       ...(sortBy.value !== 'newest' && { sort: sortBy.value }),
     },
   })
@@ -129,10 +132,19 @@ onMounted(fetchJobs)
 
     <!-- Results -->
     <div class="container jobs-content">
+      <!-- Active category chip -->
+      <div v-if="category" class="active-filters">
+        <span class="filter-chip">
+          {{ category }}
+          <button class="filter-chip__remove" aria-label="清除分类" @click="category = ''">×</button>
+        </span>
+      </div>
+
       <div class="jobs-meta">
         <span v-if="!loading">
           共 <strong>{{ jobs.length }}</strong> 个职位
           <template v-if="keyword"> · "{{ keyword }}"</template>
+          <template v-if="category"> · {{ category }}</template>
         </span>
       </div>
 
@@ -145,7 +157,7 @@ onMounted(fetchJobs)
           <Sprout :size="48" :stroke-width="1.2" />
         </div>
         <h3 class="jobs-empty__title">暂无符合条件的职位</h3>
-        <p class="jobs-empty__desc">试试调整搜索条件，或&nbsp;<button class="link-btn" @click="keyword = ''; city = ''; jobType = ''">清除筛选</button></p>
+        <p class="jobs-empty__desc">试试调整搜索条件，或&nbsp;<button class="link-btn" @click="keyword = ''; city = ''; jobType = ''; category = ''">清除筛选</button></p>
       </div>
 
       <ul v-else class="jobs-list" role="list">
@@ -243,6 +255,19 @@ onMounted(fetchJobs)
 
 /* ── Content ── */
 .jobs-content { padding-block: var(--space-6); }
+
+.active-filters { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-3); }
+.filter-chip {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  height: 28px; padding-inline: var(--space-3);
+  font-size: var(--text-xs); font-weight: 500;
+  background: var(--gs-primary-tint); color: var(--gs-primary);
+  border: 1px solid var(--gs-primary); border-radius: var(--radius-full);
+}
+.filter-chip__remove {
+  background: none; border: none; color: inherit; cursor: pointer;
+  font-size: 1rem; line-height: 1; padding: 0;
+}
 
 .jobs-meta {
   font-size: var(--text-sm);

@@ -16,22 +16,31 @@ ChartJS.register(
   Tooltip, Legend, Title, Filler,
 )
 
-const loading = ref(true)
-const stats   = ref<any>(null)
-const users   = ref<any[]>([])
+const loading         = ref(true)
+const stats           = ref<any>(null)
+const users           = ref<any[]>([])
+const pendingCompanies = ref<any[]>([])
 
 onMounted(async () => {
   try {
-    const [sRes, uRes] = await Promise.all([
+    const [sRes, uRes, cRes] = await Promise.all([
       api.get('/admin/stats'),
       api.get('/admin/users'),
+      api.get('/admin/companies/pending'),
     ])
-    stats.value = sRes.data
-    users.value = uRes.data
+    stats.value            = sRes.data
+    users.value            = uRes.data
+    pendingCompanies.value = cRes.data
   } finally {
     loading.value = false
   }
 })
+
+async function verifyCompany(companyId: string, verified: boolean) {
+  await api.patch(`/admin/companies/${companyId}/verify`, null, { params: { verified } })
+  pendingCompanies.value = pendingCompanies.value.filter(c => c.id !== companyId)
+  if (stats.value) stats.value.total_companies += 0  // trigger reactivity
+}
 
 // ── Chart data ────────────────────────────────────────────────────
 
@@ -181,6 +190,41 @@ async function deleteUser(userId: string) {
         </div>
       </div>
 
+      <!-- Company verification -->
+      <section v-if="pendingCompanies.length > 0" class="section fade-up">
+        <h2 class="section-title">
+          待审企业
+          <span class="badge-count">{{ pendingCompanies.length }}</span>
+        </h2>
+        <div class="table-wrap">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th>企业名称</th>
+                <th>行业</th>
+                <th>城市</th>
+                <th>招聘方</th>
+                <th>提交时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="c in pendingCompanies" :key="c.id">
+                <td class="user-name">{{ c.name }}</td>
+                <td>{{ c.industry ?? '—' }}</td>
+                <td>{{ c.location ?? '—' }}</td>
+                <td class="user-email">{{ c.recruiter?.name }} ({{ c.recruiter?.email }})</td>
+                <td class="user-date">{{ c.created_at?.slice(0, 10) }}</td>
+                <td class="verify-actions">
+                  <button class="btn btn--primary btn--sm" @click="verifyCompany(c.id, true)">通过</button>
+                  <button class="btn btn--ghost btn--sm" style="color:var(--gs-error)" @click="verifyCompany(c.id, false)">驳回</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <!-- User table -->
       <section class="section fade-up">
         <h2 class="section-title">用户管理</h2>
@@ -254,6 +298,15 @@ async function deleteUser(userId: string) {
 .user-date  { color: var(--gs-text-3); }
 .role-gs-select { height: 32px !important; font-size: var(--text-xs) !important; }
 
+.badge-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 22px; padding-inline: var(--space-2);
+  font-size: var(--text-xs); font-weight: 700;
+  background: oklch(55% 0.18 25); color: #fff;
+  border-radius: var(--radius-full); margin-left: var(--space-2);
+  vertical-align: middle;
+}
+.verify-actions { display: flex; gap: var(--space-2); }
 .skeleton-card { background: var(--gs-surface); border: 1px solid var(--gs-border); border-radius: var(--radius-lg); animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
 @media (max-width: 900px) { .stats-row { grid-template-columns: 1fr 1fr; } .charts-grid { grid-template-columns: 1fr; } .chart-card--wide,.chart-card--full { grid-column: auto; } }

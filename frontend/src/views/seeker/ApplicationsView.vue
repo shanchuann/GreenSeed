@@ -19,9 +19,10 @@ interface Application {
   }
 }
 
-const apps    = ref<Application[]>([])
-const loading = ref(true)
-const filter  = ref<string>('all')
+const apps      = ref<Application[]>([])
+const loading   = ref(true)
+const filter    = ref<string>('all')
+const withdrawing = ref<string | null>(null)
 
 onMounted(async () => {
   try {
@@ -31,6 +32,17 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+async function withdraw(appId: string) {
+  if (!confirm('确认撤回该申请？')) return
+  withdrawing.value = appId
+  try {
+    await api.delete(`/applications/${appId}`)
+    apps.value = apps.value.filter(a => a.id !== appId)
+  } finally {
+    withdrawing.value = null
+  }
+}
 
 const statusLabel: Record<string, string> = {
   pending:   '待查看',
@@ -113,7 +125,15 @@ function relTime(iso: string) {
               <span class="salary">{{ salary(app) }}</span>
             </div>
           </div>
-          <div class="app-card__time">{{ relTime(app.created_at) }}</div>
+          <div class="app-card__right">
+            <span class="app-card__time">{{ relTime(app.created_at) }}</span>
+            <button
+              v-if="app.status === 'pending' || app.status === 'reviewing'"
+              class="withdraw-btn"
+              :disabled="withdrawing === app.id"
+              @click="withdraw(app.id)"
+            >{{ withdrawing === app.id ? '撤回中…' : '撤回' }}</button>
+          </div>
         </li>
       </ul>
     </div>
@@ -156,7 +176,17 @@ function relTime(iso: string) {
 .app-card__meta { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); color: var(--gs-text-2); flex-wrap: wrap; }
 .dot { color: var(--gs-border-strong); }
 .salary { color: var(--gs-primary); font-weight: 600; }
-.app-card__time { font-size: var(--text-sm); color: var(--gs-text-3); white-space: nowrap; flex-shrink: 0; }
+.app-card__right { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2); flex-shrink: 0; }
+.app-card__time { font-size: var(--text-sm); color: var(--gs-text-3); white-space: nowrap; }
+.withdraw-btn {
+  height: 26px; padding-inline: var(--space-3);
+  font-size: var(--text-xs); font-weight: 500;
+  color: var(--gs-text-3); background: none;
+  border: 1px solid var(--gs-border); border-radius: var(--radius-full);
+  cursor: pointer; transition: color var(--duration-fast), border-color var(--duration-fast);
+}
+.withdraw-btn:hover:not(:disabled) { color: oklch(55% 0.18 25); border-color: oklch(55% 0.18 25); }
+.withdraw-btn:disabled { opacity: 0.5; cursor: default; }
 .tag--error { background: oklch(from var(--gs-error) l c h / 0.1); color: var(--gs-error); }
 
 .empty-state { text-align: center; padding-block: var(--space-20); }

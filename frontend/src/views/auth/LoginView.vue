@@ -55,7 +55,7 @@ async function submit() {
         <div class="field">
           <div class="field__row">
             <label class="field__label" for="password">密码</label>
-            <a href="#" class="field__link">忘记密码？</a>
+            <RouterLink to="/forgot-password" class="field__link">忘记密码？</RouterLink>
           </div>
           <input
             id="password"

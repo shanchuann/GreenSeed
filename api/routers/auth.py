@@ -3,10 +3,21 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from supabase import Client
 
-from api.deps import CurrentUser, get_supabase, get_supabase_admin
+from pydantic import BaseModel, EmailStr
+
+from api.deps import CurrentUser, _decode_token, get_supabase, get_supabase_admin
 from api.models.schemas import AuthResponse, LoginRequest, RegisterRequest, UserOut
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    password: str
 
 router = APIRouter()
 
@@ -132,6 +143,38 @@ async def upload_resume(
     public_url = admin_db.storage.from_("resumes").get_public_url(path)
     res = admin_db.table("profiles").update({"resume_url": public_url}).eq("id", user["id"]).execute()
     return UserOut(**res.data[0])
+
+
+@router.post("/forgot-password", status_code=204)
+async def forgot_password(
+    body:    ForgotPasswordRequest,
+    anon_db: Annotated[Client, Depends(get_supabase)],
+):
+    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+    try:
+        anon_db.auth.reset_password_for_email(
+            body.email,
+            options={"redirect_to": f"{frontend_url}/reset-password"},
+        )
+    except Exception:
+        pass  # 不暴露邮箱是否存在
+
+
+_bearer = HTTPBearer()
+
+@router.post("/reset-password", status_code=204)
+async def reset_password(
+    body:     ResetPasswordRequest,
+    admin_db: Annotated[Client, Depends(get_supabase_admin)],
+    creds:    Annotated[HTTPAuthorizationCredentials, Depends(_bearer)],
+):
+    if len(body.password) < 8:
+        raise HTTPException(400, "密码至少 8 位")
+    payload = _decode_token(creds.credentials)
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(401, "无效令牌")
+    admin_db.auth.admin.update_user_by_id(user_id, {"password": body.password})
 
 
 @router.post("/logout", status_code=204)

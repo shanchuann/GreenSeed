@@ -47,6 +47,36 @@ async def delete_user(
     db.table("profiles").delete().eq("id", user_id).execute()
 
 
+# ── 企业审核 ──────────────────────────────────────────────────────
+
+@router.get("/companies/pending")
+async def pending_companies(
+    _:  AdminOnly,
+    db: Annotated[Client, Depends(get_supabase_admin)],
+):
+    res = (
+        db.table("companies")
+        .select("*, recruiter:profiles(id,name,email)")
+        .eq("verified", False)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return res.data
+
+
+@router.patch("/companies/{company_id}/verify")
+async def verify_company(
+    company_id: str,
+    verified:   bool,
+    _:          AdminOnly,
+    db:         Annotated[Client, Depends(get_supabase_admin)],
+):
+    res = db.table("companies").update({"verified": verified}).eq("id", company_id).execute()
+    if not res.data:
+        raise HTTPException(404, "企业不存在")
+    return {"ok": True, "verified": verified}
+
+
 # ── 平台统计 ──────────────────────────────────────────────────────
 
 @router.get("/stats", response_model=PlatformStats)
