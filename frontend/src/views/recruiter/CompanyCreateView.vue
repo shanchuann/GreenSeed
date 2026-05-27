@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import api from '@/api'
 import GsSelect, { type SelectOption } from '@/components/ui/GsSelect.vue'
 
-const router  = useRouter()
+const router    = useRouter()
+const route     = useRoute()
+const companyId = route.params.id as string | undefined
+const isEdit    = computed(() => !!companyId)
+
 const loading = ref(false)
 const error   = ref('')
 
@@ -22,15 +26,30 @@ const industryOptions: SelectOption[] = [
   ...industries.map(i => ({ value: i, label: i })),
 ]
 
+onMounted(async () => {
+  if (!isEdit.value) return
+  const res = await api.get(`/companies/${companyId}`)
+  const c = res.data
+  form.name        = c.name        ?? ''
+  form.description = c.description ?? ''
+  form.industry    = c.industry    ?? ''
+  form.location    = c.location    ?? ''
+  form.website     = c.website     ?? ''
+})
+
 async function submit() {
   if (!form.name.trim()) { error.value = '公司名称不能为空'; return }
   error.value  = ''
   loading.value = true
   try {
-    await api.post('/companies', form)
+    if (isEdit.value) {
+      await api.patch(`/companies/${companyId}`, form)
+    } else {
+      await api.post('/companies', form)
+    }
     router.push('/recruiter')
   } catch (e: any) {
-    error.value = e?.response?.data?.detail ?? '创建失败，请重试'
+    error.value = e?.response?.data?.detail ?? (isEdit.value ? '保存失败，请重试' : '创建失败，请重试')
   } finally {
     loading.value = false
   }
@@ -41,7 +60,7 @@ async function submit() {
   <div class="page-wrap">
     <div class="container container--narrow">
       <RouterLink to="/recruiter" class="back-link fade-up">← 返回招聘管理</RouterLink>
-      <h1 class="page-title fade-up">创建公司主页</h1>
+      <h1 class="page-title fade-up">{{ isEdit ? '编辑公司信息' : '创建公司主页' }}</h1>
 
       <form @submit.prevent="submit" class="create-form fade-up">
         <div class="form-section">
@@ -81,7 +100,7 @@ async function submit() {
         <div class="form-actions">
           <RouterLink to="/recruiter" class="btn btn--ghost">取消</RouterLink>
           <button type="submit" class="btn btn--primary btn--lg" :disabled="loading">
-            {{ loading ? '创建中…' : '创建公司' }}
+            {{ loading ? (isEdit ? '保存中…' : '创建中…') : (isEdit ? '保存修改' : '创建公司') }}
           </button>
         </div>
       </form>

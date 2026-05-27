@@ -3,11 +3,10 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api'
 
-const router   = useRouter()
-const loading  = ref(true)
+const router    = useRouter()
+const loading   = ref(true)
 const companies = ref<any[]>([])
 const jobs      = ref<any[]>([])
-const recentApps = ref<any[]>([])
 
 onMounted(async () => {
   try {
@@ -16,7 +15,7 @@ onMounted(async () => {
       api.get('/jobs/mine'),
     ])
     companies.value = cRes.data
-    jobs.value = jRes.data
+    jobs.value      = jRes.data
   } finally {
     loading.value = false
   }
@@ -24,6 +23,24 @@ onMounted(async () => {
 
 const openJobs   = computed(() => jobs.value.filter(j => j.status === 'open').length)
 const closedJobs = computed(() => jobs.value.filter(j => j.status === 'closed').length)
+
+async function toggleJobStatus(job: any) {
+  const next = job.status === 'open' ? 'closed' : 'open'
+  await api.patch(`/jobs/${job.id}`, { status: next })
+  job.status = next
+}
+
+async function deleteJob(job: any) {
+  if (!confirm(`确认删除职位「${job.title}」？此操作不可撤销。`)) return
+  await api.delete(`/jobs/${job.id}`)
+  jobs.value = jobs.value.filter(j => j.id !== job.id)
+}
+
+async function deleteCompany(c: any) {
+  if (!confirm(`确认删除公司「${c.name}」？该公司下的职位也将一并删除。`)) return
+  await api.delete(`/companies/${c.id}`)
+  companies.value = companies.value.filter(co => co.id !== c.id)
+}
 </script>
 
 <template>
@@ -74,9 +91,13 @@ const closedJobs = computed(() => jobs.value.filter(j => j.status === 'closed').
               <p class="company-card__name">{{ c.name }}</p>
               <p class="company-card__meta">{{ c.industry ?? '—' }} · {{ c.location ?? '—' }}</p>
             </div>
-            <span :class="['tag', c.verified ? 'tag--green' : 'tag--muted']" style="flex-shrink:0">
+            <span :class="['tag', c.verified ? 'tag--green' : 'tag--muted']">
               {{ c.verified ? '已认证' : '待认证' }}
             </span>
+            <div class="card-actions">
+              <button class="btn btn--ghost btn--sm" @click="router.push(`/recruiter/company/edit/${c.id}`)">编辑</button>
+              <button class="btn btn--danger-ghost btn--sm" @click="deleteCompany(c)">删除</button>
+            </div>
           </div>
         </div>
       </section>
@@ -99,7 +120,14 @@ const closedJobs = computed(() => jobs.value.filter(j => j.status === 'closed').
             <span :class="['tag', j.status === 'open' ? 'tag--green' : 'tag--muted']">
               {{ j.status === 'open' ? '在招' : '关闭' }}
             </span>
-            <RouterLink :to="`/recruiter/applications/${j.id}`" class="btn btn--ghost btn--sm">查看申请</RouterLink>
+            <div class="row-actions">
+              <RouterLink :to="`/recruiter/applications/${j.id}`" class="btn btn--ghost btn--sm">查看申请</RouterLink>
+              <button class="btn btn--ghost btn--sm" @click="router.push(`/recruiter/post/${j.id}`)">编辑</button>
+              <button class="btn btn--ghost btn--sm" @click="toggleJobStatus(j)">
+                {{ j.status === 'open' ? '关闭' : '开放' }}
+              </button>
+              <button class="btn btn--danger-ghost btn--sm" @click="deleteJob(j)">删除</button>
+            </div>
           </li>
         </ul>
       </section>
@@ -122,17 +150,31 @@ const closedJobs = computed(() => jobs.value.filter(j => j.status === 'closed').
 .section-title { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 700; color: var(--gs-text); }
 .section-link { font-size: var(--text-sm); color: var(--gs-primary); font-weight: 500; }
 
-.company-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4); }
-.company-card { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-5); background: var(--gs-surface); border: 1px solid var(--gs-border); border-radius: var(--radius-lg); }
+.company-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-4); }
+.company-card { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); background: var(--gs-surface); border: 1px solid var(--gs-border); border-radius: var(--radius-lg); flex-wrap: wrap; }
 .company-card__logo { width: 44px; height: 44px; flex-shrink: 0; border-radius: var(--radius-md); background: var(--gs-primary-tint); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: var(--text-sm); color: var(--gs-primary); }
-.company-card__name { font-weight: 600; color: var(--gs-text); margin-bottom: 2px; }
+.company-card__info { flex: 1; min-width: 0; }
+.company-card__name { font-weight: 600; color: var(--gs-text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .company-card__meta { font-size: var(--text-xs); color: var(--gs-text-3); }
+.card-actions { display: flex; gap: var(--space-2); margin-left: auto; }
 
 .jobs-list { list-style: none; display: flex; flex-direction: column; gap: var(--space-2); }
-.job-row { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4); background: var(--gs-surface); border: 1px solid var(--gs-border); border-radius: var(--radius-lg); flex-wrap: wrap; }
+.job-row { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); background: var(--gs-surface); border: 1px solid var(--gs-border); border-radius: var(--radius-lg); flex-wrap: wrap; }
 .job-row__title { font-weight: 600; color: var(--gs-text); flex: 1; min-width: 120px; }
 .job-row__title:hover { color: var(--gs-primary); }
 .job-row__company { font-size: var(--text-sm); color: var(--gs-text-2); }
+.row-actions { display: flex; gap: var(--space-2); margin-left: auto; flex-shrink: 0; }
+
+/* Danger ghost button */
+.btn--danger-ghost {
+  color: oklch(55% 0.18 25);
+  border-color: transparent;
+  background: transparent;
+}
+.btn--danger-ghost:hover {
+  background: oklch(97% 0.01 25);
+  border-color: oklch(85% 0.06 25);
+}
 
 .empty-hint { font-size: var(--text-sm); color: var(--gs-text-3); padding: var(--space-6) 0; }
 .link-primary { color: var(--gs-primary); }

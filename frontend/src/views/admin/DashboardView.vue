@@ -16,21 +16,24 @@ ChartJS.register(
   Tooltip, Legend, Title, Filler,
 )
 
-const loading         = ref(true)
-const stats           = ref<any>(null)
-const users           = ref<any[]>([])
+const loading          = ref(true)
+const stats            = ref<any>(null)
+const users            = ref<any[]>([])
 const pendingCompanies = ref<any[]>([])
+const allCompanies     = ref<any[]>([])
 
 onMounted(async () => {
   try {
-    const [sRes, uRes, cRes] = await Promise.all([
+    const [sRes, uRes, cRes, acRes] = await Promise.all([
       api.get('/admin/stats'),
       api.get('/admin/users'),
       api.get('/admin/companies/pending'),
+      api.get('/companies'),
     ])
     stats.value            = sRes.data
     users.value            = uRes.data
     pendingCompanies.value = cRes.data
+    allCompanies.value     = acRes.data
   } finally {
     loading.value = false
   }
@@ -138,6 +141,13 @@ async function deleteUser(userId: string) {
   await api.delete(`/admin/users/${userId}`)
   users.value = users.value.filter(u => u.id !== userId)
 }
+
+async function adminDeleteCompany(c: any) {
+  if (!confirm(`确认删除公司「${c.name}」？该公司下的职位也将一并删除。`)) return
+  await api.delete(`/companies/${c.id}`)
+  allCompanies.value     = allCompanies.value.filter(co => co.id !== c.id)
+  pendingCompanies.value = pendingCompanies.value.filter(co => co.id !== c.id)
+}
 </script>
 
 <template>
@@ -219,6 +229,44 @@ async function deleteUser(userId: string) {
                   <button class="btn btn--primary btn--sm" @click="verifyCompany(c.id, true)">通过</button>
                   <button class="btn btn--ghost btn--sm" style="color:var(--gs-error)" @click="verifyCompany(c.id, false)">驳回</button>
                 </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- All companies -->
+      <section v-if="!loading" class="section fade-up">
+        <h2 class="section-title">公司管理</h2>
+        <div class="table-wrap">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th>公司名称</th>
+                <th>行业</th>
+                <th>城市</th>
+                <th>认证状态</th>
+                <th>创建时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="c in allCompanies" :key="c.id">
+                <td class="user-name">{{ c.name }}</td>
+                <td>{{ c.industry ?? '—' }}</td>
+                <td>{{ c.location ?? '—' }}</td>
+                <td>
+                  <span :class="['tag', c.verified ? 'tag--green' : 'tag--muted']">
+                    {{ c.verified ? '已认证' : '待认证' }}
+                  </span>
+                </td>
+                <td class="user-date">{{ c.created_at?.slice(0, 10) }}</td>
+                <td>
+                  <button class="btn btn--ghost btn--sm" style="color:var(--gs-error)" @click="adminDeleteCompany(c)">删除</button>
+                </td>
+              </tr>
+              <tr v-if="allCompanies.length === 0">
+                <td colspan="6" style="text-align:center;color:var(--gs-text-3);padding:var(--space-6)">暂无公司数据</td>
               </tr>
             </tbody>
           </table>

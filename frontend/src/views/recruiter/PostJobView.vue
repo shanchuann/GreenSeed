@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import api from '@/api'
 import GsSelect, { type SelectOption } from '@/components/ui/GsSelect.vue'
 
 const router  = useRouter()
+const route   = useRoute()
+const jobId   = route.params.id as string | undefined
+const isEdit  = computed(() => !!jobId)
+
 const loading = ref(false)
 const error   = ref('')
 const companies = ref<any[]>([])
@@ -27,7 +31,22 @@ const tagInput = ref('')
 onMounted(async () => {
   const res = await api.get('/companies/mine')
   companies.value = res.data
-  if (companies.value.length > 0) form.company_id = companies.value[0].id
+  if (isEdit.value) {
+    const jRes = await api.get(`/jobs/${jobId}`)
+    const j = jRes.data
+    form.company_id   = j.company_id
+    form.title        = j.title
+    form.description  = j.description  ?? ''
+    form.requirements = j.requirements ?? ''
+    form.salary_min   = j.salary_min   ?? undefined
+    form.salary_max   = j.salary_max   ?? undefined
+    form.job_type     = j.job_type
+    form.location     = j.location     ?? ''
+    form.category     = j.category     ?? ''
+    form.tags         = [...(j.tags    ?? [])]
+  } else if (companies.value.length > 0) {
+    form.company_id = companies.value[0].id
+  }
 })
 
 function addTag() {
@@ -43,10 +62,15 @@ async function submit() {
   error.value = ''
   loading.value = true
   try {
-    const res = await api.post('/jobs', form)
-    router.push(`/jobs/${res.data.id}`)
+    if (isEdit.value) {
+      await api.patch(`/jobs/${jobId}`, form)
+      router.push('/recruiter')
+    } else {
+      const res = await api.post('/jobs', form)
+      router.push(`/jobs/${res.data.id}`)
+    }
   } catch (e: any) {
-    error.value = e?.response?.data?.detail ?? '发布失败，请重试'
+    error.value = e?.response?.data?.detail ?? (isEdit.value ? '保存失败，请重试' : '发布失败，请重试')
   } finally {
     loading.value = false
   }
@@ -71,7 +95,7 @@ const categoryOptions: SelectOption[] = [
 <template>
   <div class="page-wrap">
     <div class="container container--narrow">
-      <h1 class="page-title fade-up">发布职位</h1>
+      <h1 class="page-title fade-up">{{ isEdit ? '编辑职位' : '发布职位' }}</h1>
 
       <div v-if="companies.length === 0 && !loading" class="no-company-hint fade-up">
         <p>发布职位前需要先创建公司主页</p>
@@ -158,7 +182,7 @@ const categoryOptions: SelectOption[] = [
         <div class="form-actions">
           <RouterLink to="/recruiter" class="btn btn--ghost">取消</RouterLink>
           <button type="submit" class="btn btn--primary btn--lg" :disabled="loading">
-            {{ loading ? '发布中…' : '发布职位' }}
+            {{ loading ? (isEdit ? '保存中…' : '发布中…') : (isEdit ? '保存修改' : '发布职位') }}
           </button>
         </div>
       </form>
